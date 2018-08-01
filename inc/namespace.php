@@ -13,7 +13,7 @@ function setup() {
 	 *
 	 * @param bool $use_cropper True to enable the cropper tool, false to disable.
 	 */
-	$use_cropper = apply_filters( 'hm.smart-media.cropper', true );
+	$use_cropper = apply_filters( 'hm.smart-media.cropper', false );
 	if ( $use_cropper ) {
 		require_once __DIR__ . '/cropper/namespace.php';
 		Cropper\setup();
