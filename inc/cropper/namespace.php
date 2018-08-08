@@ -22,6 +22,16 @@ function setup() {
 		add_action( 'wp_ajax_hm_thumbnail_save', __NAMESPACE__ . '\\ajax_thumbnail_save' );
 		add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 	}
+
+	// Tachyon settings.
+	add_filter( 'tachyon_pre_args', function ( $args ) {
+		if ( isset( $args['resize'] ) ) {
+			$args['crop_strategy'] = 'smart';
+		}
+		return $args;
+	} );
+
+	add_filter( 'tachyon_disable_in_admin', '__return_false' );
 }
 
 function enqueue_scripts( $hook = false ) {

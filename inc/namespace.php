@@ -24,9 +24,9 @@ function setup() {
 	 *
 	 * @param bool $use_justified_gallery True to enable, false to disable.
 	 */
-	$use_justified_gallery = apply_filters( 'hm.smart-media.justified-gallery', true );
+	$use_justified_gallery = apply_filters( 'hm.smart-media.justified-library', true );
 	if ( $use_justified_gallery ) {
-		require_once __DIR__ . '/justified-gallery/namespace.php';
+		require_once __DIR__ . '/justified-library/namespace.php';
 		Justified_Gallery\setup();
 	}
 }

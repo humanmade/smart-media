@@ -4,6 +4,12 @@
 	max-height: 168px;
 }
 
+.attachments-browser .attachment.uploading .thumbnail,
+.wp-core-ui .media-frame-content[data-columns] .attachment.uploading .thumbnail {
+	width: 150px;
+	height: 150px;
+}
+
 .attachments-browser .attachment .attachment-preview::before {
 	display: none;
 }
@@ -11,6 +17,7 @@
 .attachments-browser .attachment .thumbnail {
 	position: relative;
 	max-height: 150px;
+	transition: width .3s ease-in-out;
 }
 
 .attachments-browser .attachment .thumbnail::after {
