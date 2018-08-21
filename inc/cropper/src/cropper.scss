@@ -1,0 +1,101 @@
+/* Hide built in image editor */
+.wp-core-ui .edit-attachment,
+.wp-core-ui .button[id^="imgedit-open-btn-"] {
+	display: none;
+}
+
+.media-image-edit {
+	display: flex;
+	align-items: stretch;
+}
+
+.hm-thumbnail-sizes {
+	flex: 0 0 200px;
+	max-height: 100%;
+	overflow: auto;
+	background: #fafafa;
+	border-right: 1px solid #ddd;
+
+	h2 {
+		margin: 16px;
+		padding: 0;
+	}
+
+	&__list {
+		li:first-child {
+			padding-bottom: 8px;
+			margin-bottom: 8px;
+			border-bottom: 1px solid #ddd;
+		}
+
+		.current {
+			border: 1px solid #ddd;
+			background: rgba( 0,0,0, .1 );
+		}
+
+		button {
+			background: none;
+			border: 0;
+			margin: 4px 8px;
+			padding: 8px;
+			box-sizing: border-box;
+			cursor: pointer;
+			display: block;
+			border-radius: 3px;
+			width: calc(100% - 16px);
+		}
+
+		h3 {
+			text-transform: capitalize;
+			margin: 0 0 4px;
+			padding: 0;
+
+			small {
+				margin-left: 16px;
+				font-weight: 300;
+			}
+		}
+
+		img {
+			display: block;
+			width: auto;
+			height: auto;
+			max-width: 100%;
+			max-height: 400px;
+		}
+	}
+}
+
+.hm-thumbnail-editor {
+	padding: 16px;
+	overflow: auto;
+	flex: 1;
+
+	h2 {
+		margin: 0 0 16px;
+
+		small {
+			margin-left: 16px;
+			font-weight: normal;
+		}
+	}
+
+	&__image {
+
+		&-crop {
+			position: relative;
+		}
+
+		img {
+			display: block;
+			max-width: 100%;
+			max-height: calc(100% - 100px);
+			width: auto;
+			height: auto;
+		}
+	}
+
+	&__actions {
+		margin: 16px 0 8px;
+	}
+}
