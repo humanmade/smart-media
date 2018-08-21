@@ -13,7 +13,7 @@ function setup() {
 	 *
 	 * @param bool $use_cropper True to enable the cropper tool, false to disable.
 	 */
-	$use_cropper = apply_filters( 'hm.smart-media.cropper', false );
+	$use_cropper = apply_filters( 'hm.smart-media.cropper', true );
 	if ( $use_cropper ) {
 		require_once __DIR__ . '/cropper/namespace.php';
 		Cropper\setup();
@@ -29,4 +29,33 @@ function setup() {
 		require_once __DIR__ . '/justified-library/namespace.php';
 		Justified_Gallery\setup();
 	}
+}
+
+/**
+ * Get the URL of an asset in the manifest by name.
+ *
+ * @param string $filename
+ * @return string|false
+ */
+function get_asset_url( $filename ) {
+	$manifest_file = dirname( __FILE__ ) . '/asset-manifest.json';
+
+	if ( ! file_exists( $manifest_file ) ) {
+		return false;
+	}
+
+	$manifest = file_get_contents( $manifest_file );
+	$manifest = json_decode( $manifest, true );
+
+	if ( ! $manifest || ! isset( $manifest[ basename( $filename ) ] ) ) {
+		return false;
+	}
+
+	$path = $manifest[ basename( $filename ) ];
+
+	if ( strpos( $path, 'http' ) !== false ) {
+		return $path;
+	}
+
+	return plugins_url( $manifest[ basename( $filename ) ], dirname( __DIR__ ) );
 }

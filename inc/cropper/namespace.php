@@ -14,16 +14,22 @@ function setup() {
 
 	// Admin-only hooks.
 	if ( is_admin() ) {
-
 		// Add scripts for cropper whenever media modal is loaded.
-		add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts' );
-		add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_scripts' );
-
+		add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
+		// Modify attachment JS data.
 		add_action( 'wp_ajax_hm_thumbnail_save', __NAMESPACE__ . '\\ajax_thumbnail_save' );
+		// Output backbone templates.
 		add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 	}
 
-	// Tachyon settings.
+	// Preserve quality when editing original.
+	add_filter( 'jpeg_quality', __NAMESPACE__ . '\\jpeg_quality', 10, 2 );
+
+	/**
+	 * Tachyon settings.
+	 */
+
+	// Default to smart cropping.
 	add_filter( 'tachyon_pre_args', function ( $args ) {
 		if ( isset( $args['resize'] ) ) {
 			$args['crop_strategy'] = 'smart';
@@ -31,13 +37,22 @@ function setup() {
 		return $args;
 	} );
 
+	// Use tachyon in the admin.
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
+
+	// @todo Disable intermediate size generation but preserve sizes metadata.
 }
 
+/**
+ * Queue up the image editing views & states.
+ *
+ * @param boolean $hook
+ * @return void
+ */
 function enqueue_scripts( $hook = false ) {
 	wp_enqueue_script(
-		'hm-media-tools-cropper',
-		plugins_url( '/cropper.js', __FILE__ ),
+		'hm-smart-media-cropper',
+		plugins_url( '/build/cropper.js', __FILE__ ),
 		[
 			'jquery',
 			'media-views',
@@ -47,33 +62,68 @@ function enqueue_scripts( $hook = false ) {
 		true
 	);
 
-	wp_enqueue_style( 'hm-smart-media-cropper', plugins_url( '/cropper.css', __FILE__ ), [], null );
-
-	wp_localize_script(
-		'hm-media-tools-cropper', 'HM_MEDIA_TOOLS', [
+	wp_add_inline_script(
+		'hm-smart-media-cropper',
+		sprintf( 'var HM = HM || {}; HM.SmartMedia = %s;', wp_json_encode( [
 			'i18n' => [
-				'cropTitle' => __( 'Edit image', 'hm-media-tools' ),
-				'cropSave'  => __( 'Save changes', 'hm-media-tools' ),
-				'cropClose' => __( 'Close editor', 'hm-media-tools' ),
-				'cropEdit'  => __( 'Edit crop', 'hm-media-tools' ),
+				'cropTitle' => __( 'Edit image', 'hm-smart-media' ),
+				'cropSave'  => __( 'Save changes', 'hm-smart-media' ),
+				'cropClose' => __( 'Close editor', 'hm-smart-media' ),
+				'cropEdit'  => __( 'Edit crop', 'hm-smart-media' ),
 			],
 			'nonces' => [
-				'crop'  => wp_create_nonce( 'hm_save_crop' ),
+				'crop' => wp_create_nonce( 'hm_save_crop' ),
 			],
 			'sizes' => get_image_sizes(),
-		]
+		] ) )
 	);
 }
 
 /**
- * Add crop data to attachment js
+ * Add extra meta data to attachment js.
  *
  * @param  array $response
  * @param  WP_Post $attachment
  * @return array
  */
 function attachment_js( $response, $attachment ) {
-	$response['crop'] = array_filter( (array) get_post_meta( $attachment->ID, '_hm_smart_media_crop', true ) );
+	$meta         = wp_get_attachment_metadata( $attachment->ID );
+	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
+
+	$big   = max( $meta['width'], $meta['height'] );
+	$sizer = $big > 400 ? 400 / $big : 1;
+
+	// Add capabilities and permissions for imageEdit.
+	$response['editor'] = [
+		'nonce' => wp_create_nonce( "image_editor-{$attachment->ID}" ),
+		'sizer' => $sizer,
+		'can'   => [
+			'rotate' => wp_image_editor_supports( [
+				'mime_type' => get_post_mime_type( $attachment->ID ),
+				'methods'   => [ 'rotate' ],
+			] ),
+			'restore' => false,
+		],
+	];
+
+	if ( ! empty( $backup_sizes ) && isset( $backup_sizes['full-orig'], $meta['file'] ) ) {
+		$response['editor']['can']['restore'] = $backup_sizes['full-orig']['file'] !== basename( $meta['file'] );
+	}
+
+	// Fill intermediate sizes array.
+	$sizes = get_image_sizes();
+
+	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta ) {
+		$src = wp_get_attachment_image_src( $attachment->ID, $name );
+
+		$size['url']    = $src[0];
+		$size['width']  = $src[1];
+		$size['height'] = $src[2];
+		$size['cropTo'] = implode( ',', (array) get_post_meta( $attachment->ID, "_crop_{$name}", true ) ?: [] );
+
+		return $size;
+	}, $sizes, array_keys( $sizes ) );
+	$response['sizes'] = array_combine( array_keys( $sizes ), $response['sizes'] );
 
 	return $response;
 }
@@ -87,7 +137,7 @@ function ajax_thumbnail_save() {
 	check_ajax_referer( 'hm_save_crop' );
 
 	if ( ! isset( $_POST['crop'] ) ) {
-		wp_send_json_error( __( 'No cropping data was received, that shouldn\'t happen :/', 'hm-media-tools' ) );
+		wp_send_json_error( __( 'No cropping data was received, that shouldn\'t happen :/', 'hm-smart-media' ) );
 	}
 
 	$crop = map_deep( wp_unslash( $_POST['crop'] ), 'absint' );
@@ -102,57 +152,7 @@ function ajax_thumbnail_save() {
  * Output the Backbone templates for the Media Manager-based image cropping functionality.
  */
 function templates() {
-	?>
-	<script type="text/template" id="tmpl-hm-thumbnail-container">
-		<div id="hm-thumbnail-container">
-			<div class="spinner"></div>
-		</div>
-	</script>
-	<script type="text/template" id="tmpl-hm-thumbnail-sizes">
-		<div class="hm-thumbnail-sizes">
-			<h2><?php esc_html_e( 'Thumbnails', 'hm-smart-media' ); ?></h2>
-			<div class="hm-thumbnail-sizes-list"></div>
-		</div>
-	</script>
-	<script type="text/template" id="tmpl-hm-thumbnail-size">
-		<div class="hm-thumbnail-size-select">
-			<label><?php esc_html_e( 'Currently cropping', 'hm-media-tools' ); ?></label>
-			<select>
-				<# _.each( data.attachment.sizes, function( props, size ) { #>
-					<# if ( size !== 'full' && HM_MEDIA_TOOLS.sizes[ size ].crop ) { #>
-						<option value="{{size}}">{{ size.replace(/[_-]+/g,' ') }}
-							&mdash; {{ props.width }}px / {{ props.height }}px
-						</option>
-					<# } #>
-				<# }); #>
-			</select>
-		</div>
-	</script>
-	<script type="text/template" id="tmpl-hm-thumbnail-image">
-		<div class="hm-thumbnail-edit-wrap">
-			<h3>
-				{{ data.size.replace(/[_-]+/g,' ') }} &mdash; {{ data.attachment.sizes[ data.size ].width }}px / {{ data.attachment.sizes[ data.size ].height }}px
-			</h3>
-			<fieldset class="hm-thumbnail-crop-strategy">
-				<legend><?php esc_html_e( 'Crop', 'hm-smart-media' ); ?></legend>
-				<label><input type="radio" name="hm-thumbnail-crop-strategy-{{ data.size }}" value="smart" {{ data.attachment.crop_strategy === 'smart' ? 'checked' : '' }} /> <?php esc_html_e( 'Smart' ); ?></label>
-				<label><input type="radio" name="hm-thumbnail-crop-strategy-{{ data.size }}" value="manual" {{ data.attachment.crop_strategy === 'manual' ? 'checked' : '' }} /> <?php esc_html_e( 'Manual' ); ?></label>
-			</fieldset>
-			<div class="hm-thumbnail-edit">
-				<div class="hm-thumbnail-edit-image">
-					<img
-						src="{{ data.attachment.sizes[ data.size ].url }}"
-						width="{{ data.attachment.sizes[ data.size ].width }}"
-						height="{{ data.attachment.sizes[ data.size ].height }}"
-						alt=""
-					/>
-				</div>
-				<input class="hm-thumbnail-edit-save button button-primary" type="button" value="<?php esc_attr_e( 'Save' ); ?>" />
-			</div>
-		</div>
-	</script>
-	<?php
-
+	include 'media-template.php';
 }
 
 /**
@@ -166,15 +166,15 @@ function validate_parameters() {
 
 	if ( empty( $_REQUEST['id'] ) || ! $attachment ) {
 		// translators: %s is replaced by 'id' referring to the attachment ID.
-		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-media-tools' ), '<code>id</code>' ) );
+		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
 
 	if ( 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment->ID ) ) {
-		wp_die( sprintf( esc_html__( 'That is not a valid image attachment.', 'hm-media-tools' ), '<code>id</code>' ) );
+		wp_die( sprintf( esc_html__( 'That is not a valid image attachment.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
 
 	if ( ! current_user_can( get_post_type_object( $attachment->post_type )->cap->edit_post, $attachment->ID ) ) {
-		wp_die( esc_html__( 'You are not allowed to edit this attachment.', 'hm-media-tools' ) );
+		wp_die( esc_html__( 'You are not allowed to edit this attachment.', 'hm-smart-media' ) );
 	}
 
 	return $attachment;
@@ -216,7 +216,7 @@ function get_thumbnail_dimensions( $size ) {
 }
 
 /**
- * Gets all image sizes as keyed array with width, height and crop values
+ * Gets all image sizes as keyed array with width, height and crop values.
  *
  * @return array
  */
@@ -240,9 +240,10 @@ function get_image_sizes() {
 			}
 
 			return [
-				'width'  => $width,
-				'height' => $height,
-				'crop'   => $crop,
+				'width'       => $width,
+				'height'      => $height,
+				'crop'        => $crop,
+				'orientation' => $width > $height ? 'landscape' : 'portrait',
 			];
 		}, $sizes
 	);
@@ -287,8 +288,8 @@ function save_coordinates( $attachment_id, $size, $coordinates ) {
 /**
  * Deletes the coordinates for a custom crop for a given attachment ID and thumbnail size.
  *
- * @param  int $attachment_id Attachment ID.
- * @param  string $size Thumbnail size name.
+ * @param int $attachment_id Attachment ID.
+ * @param string $size Thumbnail size name.
  * @return bool False on failure (probably no such custom crop), true on success.
  */
 function delete_coordinates( $attachment_id, $size ) {
@@ -305,4 +306,19 @@ function delete_coordinates( $attachment_id, $size ) {
 	unset( $sizes[ $size ] );
 
 	return update_post_meta( $attachment_id, '_hm_smart_media_crop', $sizes );
+}
+
+/**
+ * Force 100% quality for image edits as we only allow editing the original.
+ *
+ * @param int $quality Percentage quality from 0-100.
+ * @param string $context The context for the change in jpeg quality.
+ * @return int
+ */
+function jpeg_quality( $quality, $context = '' ) {
+	if ( $context === 'edit_image' ) {
+		return 100;
+	}
+
+	return $quality;
 }
