@@ -156,13 +156,13 @@
 </script>
 
 <script type="text/template" id="tmpl-hm-thumbnail-sizes">
-	<h2><?php esc_html_e( 'Image sizes', 'hm-smart-media' ); ?></h2>
+	<h2 class="screen-reader-text"><?php esc_html_e( 'Image sizes', 'hm-smart-media' ); ?></h2>
 	<ul class="hm-thumbnail-sizes__list">
 		<li>
 			<button type="button" data-size="full" class="{{ data.model.get('size') === 'full' ? 'current' : '' }}">
 				<h3>
 					<?php esc_html_e( 'Original' ); ?>
-					<small>{{ data.model.get( 'width' ) }}x{{ data.model.get( 'height' ) }}</small>
+					<small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small>
 				</h3>
 				<img src="{{ data.model.get( 'url' ) }}" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
@@ -173,7 +173,7 @@
 				<button type="button" data-size="{{ size }}" class="{{ data.model.get('size') === size ? 'current' : '' }}">
 					<h3>
 						{{ size.replace( /[_-]+/g,' ' ) }}
-						<small>{{ props.width }}x{{ props.height }}</small>
+						<small>{{ props.width }} x {{ props.height }}</small>
 					</h3>
 					<img src="{{ props.url }}" width="{{ props.width }}" height="{{ props.height }}" alt="{{ size }}" draggable="false" />
 				</button>
@@ -185,9 +185,9 @@
 
 <script type="text/template" id="tmpl-hm-thumbnail-editor">
 	<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
-		<h2><?php esc_html_e( 'Original image' ) ?> <small>{{ data.model.get('width') }} x {{ data.model.get('height') }}</small></h2>
+		<h2><?php esc_html_e( 'Edit original image' ) ?> <small>{{ data.model.get('width') }} x {{ data.model.get('height') }}</small></h2>
 	<# } else { #>
-		<h2><?php esc_html_e( 'Edit thumbnail crop' ) ?></h2>
+		<h2><?php esc_html_e( 'Edit thumbnail' ) ?></h2>
 	<# } #>
 	<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
 		<div class="imgedit-menu wp-clearfix">

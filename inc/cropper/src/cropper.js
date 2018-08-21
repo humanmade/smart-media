@@ -126,8 +126,6 @@ const ImageEditor = Media.View.extend( {
     // Re-render.
     this.render();
 
-    // Remove default cropper.
-    window.imageEdit.iasapi.update( { remove: true } );
   },
   refresh() {
     this.update();
