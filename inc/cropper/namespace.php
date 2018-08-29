@@ -12,16 +12,13 @@ function setup() {
 	// Add initial crop data for js attachment models.
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 10, 3 );
 
-	// Admin-only hooks.
-	if ( is_admin() ) {
-		// Add scripts for cropper whenever media modal is loaded.
-		add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
-		// Save crop data.
-		add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
-		add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image' );
-		// Output backbone templates.
-		add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
-	}
+	// Add scripts for cropper whenever media modal is loaded.
+	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
+	// Save crop data.
+	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
+	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image' );
+	// Output backbone templates.
+	add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 
 	// Preserve quality when editing original.
 	add_filter( 'jpeg_quality', __NAMESPACE__ . '\\jpeg_quality', 10, 2 );
