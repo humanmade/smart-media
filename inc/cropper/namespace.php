@@ -18,6 +18,7 @@ function setup() {
 		add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
 		// Save crop data.
 		add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
+		add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image' );
 		// Output backbone templates.
 		add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 	}
@@ -34,7 +35,6 @@ function setup() {
 	// @todo Disable intermediate size generation but preserve sizes metadata.
 
 	// Add crop data.
-	//add_filter( 'wp_get_attachment_image_src', __NAMESPACE__ . '\\attachment_image_src', 10, 4 );
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
 }
 
@@ -72,26 +72,6 @@ function enqueue_scripts( $hook = false ) {
 			'sizes' => get_image_sizes(),
 		] ) )
 	);
-}
-
-/**
- * Filter the attachment image src to get crop data.
- *
- * @param array $image
- * @param int $attachment_id
- * @param string $size
- * @return array
- */
-function attachment_image_src( $image, $attachment_id, $size ) {
-	$crop = get_crop( $attachment_id, $size );
-
-	if ( ! $crop ) {
-		return $image;
-	}
-
-	$image[0] = add_query_arg( [ 'crop' => $crop ], $image[0] );
-
-	return $image;
 }
 
 /**
@@ -222,12 +202,15 @@ function templates() {
  * Makes sure that the "id" (attachment ID) is valid
  * and dies if not. Returns attachment object with matching ID on success.
  *
+ * @param string $id_param The request parameter to retrieve the ID from.
  * @return WP_Post
  */
-function validate_parameters() {
-	$attachment = get_post( intval( $_REQUEST['id'] ) );
+function validate_parameters( $id_param = 'id' ) {
+	// phpcs:ignore
+	$attachment = get_post( intval( $_REQUEST[ $id_param ] ) );
 
-	if ( empty( $_REQUEST['id'] ) || ! $attachment ) {
+	// phpcs:ignore
+	if ( empty( $_REQUEST[ $id_param ] ) || ! $attachment ) {
 		// translators: %s is replaced by 'id' referring to the attachment ID.
 		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
@@ -353,4 +336,28 @@ function tachyon_args( $args ) {
 	}
 
 	return $args;
+}
+
+/**
+ * Remove crop data when editing original.
+ */
+function on_edit_image() {
+	// Get the attachment.
+	$attachment = validate_parameters( 'postid' );
+
+	check_ajax_referer( 'image_editor-' . $attachment->ID );
+
+	// Only run on a save operation.
+	if ( isset( $_POST['do'] ) && $_POST['do'] !== 'save' ) {
+		return;
+	}
+
+	// Only run if transformations being applied.
+	if ( ! isset( $_POST['history'] ) || empty( json_decode( $_POST['history'], true ) ) ) {
+		return;
+	}
+
+	foreach ( array_keys( get_image_sizes() ) as $size ) {
+		delete_coordinates( $attachment->ID, $size );
+	}
 }
