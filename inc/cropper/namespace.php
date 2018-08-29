@@ -16,8 +16,8 @@ function setup() {
 	if ( is_admin() ) {
 		// Add scripts for cropper whenever media modal is loaded.
 		add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
-		// Modify attachment JS data.
-		add_action( 'wp_ajax_hm_thumbnail_save', __NAMESPACE__ . '\\ajax_thumbnail_save' );
+		// Save crop data.
+		add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
 		// Output backbone templates.
 		add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 	}
@@ -28,19 +28,14 @@ function setup() {
 	/**
 	 * Tachyon settings.
 	 */
-
-	// Default to smart cropping.
-	add_filter( 'tachyon_pre_args', function ( $args ) {
-		if ( isset( $args['resize'] ) ) {
-			$args['crop_strategy'] = 'smart';
-		}
-		return $args;
-	} );
-
-	// Use tachyon in the admin.
+	add_filter( 'tachyon_pre_args', __NAMESPACE__ . '\\tachyon_args' );
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
 
 	// @todo Disable intermediate size generation but preserve sizes metadata.
+
+	// Add crop data.
+	//add_filter( 'wp_get_attachment_image_src', __NAMESPACE__ . '\\attachment_image_src', 10, 4 );
+	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
 }
 
 /**
@@ -80,6 +75,68 @@ function enqueue_scripts( $hook = false ) {
 }
 
 /**
+ * Filter the attachment image src to get crop data.
+ *
+ * @param array $image
+ * @param int $attachment_id
+ * @param string $size
+ * @return array
+ */
+function attachment_image_src( $image, $attachment_id, $size ) {
+	$crop = get_crop( $attachment_id, $size );
+
+	if ( ! $crop ) {
+		return $image;
+	}
+
+	$image[0] = add_query_arg( [ 'crop' => $crop ], $image[0] );
+
+	return $image;
+}
+
+/**
+ * Add crop data to image_downsize() tachyon args.
+ *
+ * @param array $tachyon_args
+ * @param array $downsize_args
+ * @return array
+ */
+function image_downsize( $tachyon_args, $downsize_args ) {
+	if ( ! isset( $downsize_args['attachment_id'] ) || ! isset( $downsize_args['size'] ) ) {
+		return $tachyon_args;
+	}
+
+	$crop = get_crop( $downsize_args['attachment_id'], $downsize_args['size'] );
+
+	if ( ! $crop ) {
+		return $tachyon_args;
+	}
+
+	$tachyon_args['crop'] = $crop;
+
+	return $tachyon_args;
+}
+
+/**
+ * Get crop data for a given image and size.
+ *
+ * @param int $attachment_id
+ * @param string $size
+ * @return array|false
+ */
+function get_crop( $attachment_id, $size ) {
+	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true );
+
+	if ( empty( $crop ) ) {
+		return false;
+	}
+
+	return implode( ',', array_map( function ( $value ) {
+		return sprintf( '%dpx', $value );
+	}, $crop ) );
+}
+
+/**
  * Add extra meta data to attachment js.
  *
  * @param  array $response
@@ -116,10 +173,10 @@ function attachment_js( $response, $attachment ) {
 	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta ) {
 		$src = wp_get_attachment_image_src( $attachment->ID, $name );
 
-		$size['url']    = $src[0];
-		$size['width']  = $src[1];
-		$size['height'] = $src[2];
-		$size['cropTo'] = implode( ',', (array) get_post_meta( $attachment->ID, "_crop_{$name}", true ) ?: [] );
+		$size['url']      = $src[0];
+		$size['width']    = $src[1];
+		$size['height']   = $src[2];
+		$size['cropData'] = (object) ( get_post_meta( $attachment->ID, "_crop_{$name}", true ) ?: [] );
 
 		return $size;
 	}, $sizes, array_keys( $sizes ) );
@@ -131,19 +188,25 @@ function attachment_js( $response, $attachment ) {
 /**
  * AJAX handler for saving the cropping coordinates of a thumbnail size for a given attachment.
  */
-function ajax_thumbnail_save() {
+function ajax_save_crop() {
+	// Get the attachment.
 	$attachment = validate_parameters();
 
-	check_ajax_referer( 'hm_save_crop' );
+	check_ajax_referer( 'image_editor-' . $attachment->ID );
 
 	if ( ! isset( $_POST['crop'] ) ) {
-		wp_send_json_error( __( 'No cropping data was received, that shouldn\'t happen :/', 'hm-smart-media' ) );
+		wp_send_json_error( __( 'No cropping data received', 'hm-smart-media' ) );
 	}
 
 	$crop = map_deep( wp_unslash( $_POST['crop'] ), 'absint' );
+	$name = sanitize_key( wp_unslash( $_POST['size'] ) );
+
+	if ( ! in_array( $name, array_keys( get_image_sizes() ), true ) ) {
+		wp_send_json_error( __( 'Invalid thumbnail size received', 'hm-smart-media' ) );
+	}
 
 	// Save crop coordinates.
-	update_post_meta( $attachment->ID, '_hm_smart_media_crop', $crop );
+	update_post_meta( $attachment->ID, "_crop_{$name}", $crop );
 
 	wp_send_json_success();
 }
@@ -156,10 +219,10 @@ function templates() {
 }
 
 /**
- * Makes sure that the "id" (attachment ID) and "size" (thumbnail size) query string parameters are valid
- * and dies if they are not. Returns attachment object with matching ID on success.
+ * Makes sure that the "id" (attachment ID) is valid
+ * and dies if not. Returns attachment object with matching ID on success.
  *
- * @return null|object Dies on error, returns attachment object on success.
+ * @return WP_Post
  */
 function validate_parameters() {
 	$attachment = get_post( intval( $_REQUEST['id'] ) );
@@ -252,40 +315,6 @@ function get_image_sizes() {
 }
 
 /**
- * Fetches the coordinates for a custom crop for a given attachment ID and thumbnail size.
- *
- * @param  int $attachment_id Attachment ID.
- * @param  string $size Thumbnail size name.
- * @return array|false Array of crop coordinates or false if no custom selection set.
- */
-function get_coordinates( $attachment_id, $size ) {
-	$sizes = (array) get_post_meta( $attachment_id, '_hm_smart_media_crop', true );
-
-	$coordinates = false;
-
-	if ( ! empty( $sizes[ $size ] ) ) {
-		$coordinates = $sizes[ $size ];
-	}
-
-	return $coordinates;
-}
-
-/**
- * Saves the coordinates for a custom crop for a given attachment ID and thumbnail size.
- *
- * @param int $attachment_id Attachment ID.
- * @param string $size Thumbnail size name.
- * @param array $coordinates Array of coordinates in the format array( x, y, width, height )
- */
-function save_coordinates( $attachment_id, $size, $coordinates ) {
-	$sizes = (array) get_post_meta( $attachment_id, '_hm_smart_media_crop', true );
-
-	$sizes[ $size ] = $coordinates;
-
-	update_post_meta( $attachment_id, '_hm_smart_media_crop', $sizes );
-}
-
-/**
  * Deletes the coordinates for a custom crop for a given attachment ID and thumbnail size.
  *
  * @param int $attachment_id Attachment ID.
@@ -293,19 +322,7 @@ function save_coordinates( $attachment_id, $size, $coordinates ) {
  * @return bool False on failure (probably no such custom crop), true on success.
  */
 function delete_coordinates( $attachment_id, $size ) {
-	$sizes = get_post_meta( $attachment_id, '_hm_smart_media_crop', true );
-
-	if ( empty( $sizes ) ) {
-		return false;
-	}
-
-	if ( empty( $sizes[ $size ] ) ) {
-		return false;
-	}
-
-	unset( $sizes[ $size ] );
-
-	return update_post_meta( $attachment_id, '_hm_smart_media_crop', $sizes );
+	return delete_post_meta( $attachment_id, "_crop_{$size}" );
 }
 
 /**
@@ -321,4 +338,19 @@ function jpeg_quality( $quality, $context = '' ) {
 	}
 
 	return $quality;
+}
+
+/**
+ * Filter the default tachyon URL args.
+ *
+ * @param array $args
+ * @return array
+ */
+function tachyon_args( $args ) {
+	// Use smart cropping by default for resizes.
+	if ( isset( $args['resize'] ) && ! isset( $args['crop'] ) ) {
+		$args['crop_strategy'] = 'smart';
+	}
+
+	return $args;
 }

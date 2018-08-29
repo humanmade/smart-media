@@ -187,7 +187,7 @@
 	<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
 		<h2><?php esc_html_e( 'Edit original image' ) ?> <small>{{ data.model.get('width') }} x {{ data.model.get('height') }}</small></h2>
 	<# } else { #>
-		<h2><?php esc_html_e( 'Edit thumbnail' ) ?></h2>
+		<h2><?php esc_html_e( 'Edit crop' ) ?></h2>
 	<# } #>
 	<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
 		<div class="imgedit-menu wp-clearfix">
@@ -205,8 +205,6 @@
 
 			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
 			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
-
-			|
 
 			<# if ( HM.SmartMedia.FocalPoints ) { #>
 				<# if ( data.model.get('focalPoints').length ) { #>
@@ -229,6 +227,11 @@
 
 			<div class="imgedit-wait" id="imgedit-wait-{{ data.model.get( 'id' ) }}"></div>
 		</div>
+	<# } else { #>
+		<div class="imgedit-menu wp-clearfix">
+			<button type="button" class="button imgedit-crop button-apply-changes" disabled><span class="screen-reader-text"><?php esc_html_e( 'Apply changes', 'hm-smart-media' ); ?></span></button>
+			<button type="button" class="button imgedit-undo button-reset" disabled><span class="screen-reader-text"><?php esc_html_e( 'Reset', 'hm-smart-media' ); ?></span></button>
+		</div>
 	<# } #>
 	<div class="hm-thumbnail-editor__image-wrap">
 		<div class="hm-thumbnail-editor__image">
@@ -245,9 +248,15 @@
 		</div>
 	</div>
 	<div class="hm-thumbnail-editor__actions" id="imgedit-panel-{{ data.model.get( 'id' ) }}">
-		<input type="button" onclick="imageEdit.save({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}')" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
-		<# if ( data.model.get('editor').can.restore ) { #>
-		<input type="button" onclick="imageEdit.action({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', 'restore')" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
+		<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
+			<input type="button" onclick="imageEdit.save({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}')" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
+			<# if ( data.model.get('editor').can.restore ) { #>
+				<input type="button" onclick="imageEdit.action({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', 'restore')" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
+			<# } #>
+		<# } else { #>
+			<# if ( ! data.model.get('sizes')[ data.model.get('size') ].cropData.x ) { #>
+				<p><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.' ); ?></p>
+			<# } #>
 		<# } #>
 	</div>
 </script>

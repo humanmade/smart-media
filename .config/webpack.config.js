@@ -59,9 +59,10 @@ const commonConfig = {
 		'HM': 'HM',
 		'@wordpress/backbone': { this: [ 'wp', 'BackBone' ] },
 		'@wordpress/media': { this: [ 'wp', 'media' ] },
+		'@wordpress/ajax': { this: [ 'wp', 'ajax' ] },
+		'@wordpress/template': { this: [ 'wp', 'template' ] },
 		'jQuery': 'jQuery',
 		lodash: '_',
-		'@wordpress/template': { this: [ 'wp', 'template' ] },
 	},
 	optimization: {
 		noEmitOnErrors: true
