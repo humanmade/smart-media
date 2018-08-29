@@ -14,9 +14,11 @@ function setup() {
 
 	// Add scripts for cropper whenever media modal is loaded.
 	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
+
 	// Save crop data.
 	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
-	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image' );
+	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image', -1 );
+
 	// Output backbone templates.
 	add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
 
@@ -350,7 +352,7 @@ function on_edit_image() {
 	}
 
 	// Only run if transformations being applied.
-	if ( ! isset( $_POST['history'] ) || empty( json_decode( $_POST['history'], true ) ) ) {
+	if ( ! isset( $_POST['history'] ) || empty( json_decode( wp_unslash( $_POST['history'] ), true ) ) ) {
 		return;
 	}
 
