@@ -203,6 +203,8 @@ const ImageEditor = Media.View.extend( {
       .fail( error => console.log( error ) );
   },
   setSelection( crop ) {
+    this.onSelectStart();
+
     if ( ! crop || typeof crop.x === 'undefined' ) {
       this.cropper.setOptions( { show: true } );
       this.cropper.update();
