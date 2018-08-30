@@ -164,7 +164,7 @@
 					<?php esc_html_e( 'Original' ); ?>
 					<small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small>
 				</h3>
-				<img src="{{ data.model.get( 'url' ) }}" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
+				<img src="{{ data.model.get( 'tachyonURL' ) || data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
 		<# _.each( data.model.get('sizes'), function ( props, size ) { #>
@@ -238,7 +238,7 @@
 			<div  class="hm-thumbnail-editor__image-crop imgedit-crop-wrap" id="imgedit-crop-{{ data.model.get( 'id' ) }}">
 				<img
 					id="image-preview-{{ data.model.get( 'id' ) }}"
-					src="{{ data.model.get('url') }}"
+					src="{{ data.model.get( 'tachyonURL' ) || data.model.get('url') }}"
 					width="{{ data.model.get('width') }}"
 					height="{{ data.model.get('height') }}"
 					alt=""

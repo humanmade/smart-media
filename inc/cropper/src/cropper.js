@@ -18,8 +18,7 @@ Media.view.MediaFrame = MediaFrame.extend( {
 
     // Fire a high level init event.
     Media.events.trigger( 'frame:init', this );
-  },
-  test: true
+  }
 } );
 
 // Replace TwoColumn view.
@@ -35,8 +34,8 @@ Media.events.on( 'frame:init', () => {
         ImageEditView.load( this.controller );
       } );
 
-      // Load ImageEditView when the frame is ready.
-      this.controller.on( 'ready', () => ImageEditView.load( this.controller ) );
+      // Load ImageEditView when the frame is ready or refreshed.
+      this.controller.on( 'ready refresh', () => ImageEditView.load( this.controller ) );
     }
   } );
 } );

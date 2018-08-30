@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v0.1.2
+
+- Ensure only image attachment JS is modified
+- Use smaller thumbs in size picker where possible
+- Fix re-render on navigation between images in Media Library (frame refresh event)
+
 ## v0.1.1
 
 - Fix bug loading image editor when `SCRIPT_DEBUG` is false

@@ -123,6 +123,10 @@ function get_crop( $attachment_id, $size ) {
  * @return array
  */
 function attachment_js( $response, $attachment ) {
+	if ( ! wp_attachment_is_image( $attachment ) ) {
+		return $response;
+	}
+
 	$meta         = wp_get_attachment_metadata( $attachment->ID );
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
 
@@ -144,6 +148,11 @@ function attachment_js( $response, $attachment ) {
 
 	if ( ! empty( $backup_sizes ) && isset( $backup_sizes['full-orig'], $meta['file'] ) ) {
 		$response['editor']['can']['restore'] = $backup_sizes['full-orig']['file'] !== basename( $meta['file'] );
+	}
+
+	// Add base Tachyon URL.
+	if ( function_exists( 'tachyon_url' ) ) {
+		$response['tachyonURL'] = tachyon_url( $response['url'] );
 	}
 
 	// Fill intermediate sizes array.
