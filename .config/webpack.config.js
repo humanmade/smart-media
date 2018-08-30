@@ -63,6 +63,7 @@ const commonConfig = {
 		'@wordpress/template': { this: [ 'wp', 'template' ] },
 		'jQuery': 'jQuery',
 		lodash: '_',
+		wp: 'wp',
 	},
 	optimization: {
 		noEmitOnErrors: true

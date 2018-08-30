@@ -11,13 +11,15 @@ const $ = jQuery;
 // Create a high level event we can hook into for media frame creation.
 const MediaFrame = Media.view.MediaFrame;
 
+// Override the MediaFrame on the global.
 Media.view.MediaFrame = MediaFrame.extend( {
   initialize() {
     MediaFrame.prototype.initialize.apply( this, arguments );
 
     // Fire a high level init event.
     Media.events.trigger( 'frame:init', this );
-  }
+  },
+  test: true
 } );
 
 // Replace TwoColumn view.

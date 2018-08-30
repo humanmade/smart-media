@@ -13,7 +13,7 @@ function setup() {
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 10, 3 );
 
 	// Add scripts for cropper whenever media modal is loaded.
-	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 200 );
+	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 1 );
 
 	// Save crop data.
 	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
@@ -53,7 +53,7 @@ function enqueue_scripts( $hook = false ) {
 			'imgareaselect',
 		],
 		null,
-		true
+		false
 	);
 
 	wp_add_inline_script(
