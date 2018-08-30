@@ -1,6 +1,4 @@
 import jQuery from 'jQuery';
-import { bind } from 'lodash';
-import BackBone from '@wordpress/backbone';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ajax from '@wordpress/ajax';

@@ -1,8 +1,7 @@
 {
   "name": "smart-media",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A smarter media library for WordPress",
-  "main": "index.js",
   "scripts": {
     "build": "NODE_ENV=production webpack --config .config/webpack.config.js",
     "start": "NODE_ENV=development webpack --watch --config .config/webpack.config.js"
