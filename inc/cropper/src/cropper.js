@@ -92,7 +92,6 @@ const ImageEditSizes = Media.View.extend( {
   },
   initialize() {
     this.listenTo( this.model, 'change:sizes', this.render );
-    //this.controller.on( 'refresh', this.render );
   },
   setSize( e ) {
     this.model.set( { size: e.currentTarget.dataset.size } );
@@ -159,7 +158,8 @@ const ImageEditor = Media.View.extend( {
 
     const crop = size.cropData;
 
-    if ( ! crop.x ) {
+    // Reset to smart crop by default.
+    if ( ! crop.hasOwnProperty( 'x' ) ) {
       smartcrop.crop( $image.get( 0 ), {
         width: size.width,
         height: size.height,

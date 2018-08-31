@@ -110,4 +110,19 @@
 	&__actions {
 		margin: 16px 0 8px;
 	}
+
+	.imgedit-wait {
+		position: static;
+		width: 20px;
+		height: 20px;
+		vertical-align: middle;
+		float: right;
+		margin: 4px 0 4px 10px;
+
+		&::before {
+			margin: 0;
+			position: static;
+		}
+	}
+
 }

@@ -78,7 +78,6 @@ const commonConfig = {
 		new CleanWebpackPlugin( [ 'inc/*/build' ], {
 			root: path.resolve( __dirname, '..' ),
 			watch: true,
-			beforeEmit: true,
 		} ),
 	],
 };
