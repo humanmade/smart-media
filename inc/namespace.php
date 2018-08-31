@@ -38,7 +38,7 @@ function setup() {
  * @return string|false
  */
 function get_asset_url( $filename ) {
-	$manifest_file = dirname( __FILE__ ) . '/asset-manifest.json';
+	$manifest_file = dirname( __FILE__, 2 ) . '/manifest.json';
 
 	if ( ! file_exists( $manifest_file ) ) {
 		return false;
@@ -47,15 +47,15 @@ function get_asset_url( $filename ) {
 	$manifest = file_get_contents( $manifest_file );
 	$manifest = json_decode( $manifest, true );
 
-	if ( ! $manifest || ! isset( $manifest[ basename( $filename ) ] ) ) {
+	if ( ! $manifest || ! isset( $manifest[ $filename ] ) ) {
 		return false;
 	}
 
-	$path = $manifest[ basename( $filename ) ];
+	$path = $manifest[ $filename ];
 
 	if ( strpos( $path, 'http' ) !== false ) {
 		return $path;
 	}
 
-	return plugins_url( $manifest[ basename( $filename ) ], dirname( __DIR__ ) );
+	return plugins_url( $manifest[ $filename ], dirname( __FILE__ ) );
 }

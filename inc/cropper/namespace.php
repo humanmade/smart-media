@@ -5,6 +5,8 @@
 
 namespace HM\Media\Cropper;
 
+use function HM\Media\get_asset_url;
+
 /**
  * Initialize the class by registering various hooks.
  */
@@ -46,7 +48,7 @@ function setup() {
 function enqueue_scripts( $hook = false ) {
 	wp_enqueue_script(
 		'hm-smart-media-cropper',
-		plugins_url( '/build/cropper.js', __FILE__ ),
+		get_asset_url( 'cropper.js' ),
 		[
 			'jquery',
 			'media-views',
@@ -65,10 +67,8 @@ function enqueue_scripts( $hook = false ) {
 				'cropClose' => __( 'Close editor', 'hm-smart-media' ),
 				'cropEdit'  => __( 'Edit crop', 'hm-smart-media' ),
 			],
-			'nonces' => [
-				'crop' => wp_create_nonce( 'hm_save_crop' ),
-			],
 			'sizes' => get_image_sizes(),
+			'FocalPoints' => false,
 		] ) )
 	);
 }

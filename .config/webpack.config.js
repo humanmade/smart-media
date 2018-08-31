@@ -1,5 +1,5 @@
-const webpack = require('webpack');
 const ManifestPlugin = require('webpack-manifest-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 const path = require('path');
 
 const env = process.env.NODE_ENV || 'production';
@@ -11,7 +11,7 @@ const commonConfig = {
 	},
 	output: {
 		path: path.resolve( __dirname, '..' ),
-		filename: 'inc/[name]/build/[name].js',
+		filename: 'inc/[name]/build/[name].[hash:8].js',
 		chunkFilename: 'inc/[name]/build/chunk.[id].[chunkhash:8].js',
 		publicPath: '/',
 		libraryTarget: 'this',
@@ -73,7 +73,14 @@ const commonConfig = {
 			return !(/\.map$/.test(assetFilename));
 		},
 	},
-	plugins: [],
+	plugins: [
+		new ManifestPlugin(),
+		new CleanWebpackPlugin( [ 'inc/*/build' ], {
+			root: path.resolve( __dirname, '..' ),
+			watch: true,
+			beforeEmit: true,
+		} ),
+	],
 };
 
 const devConfig = Object.assign( {}, commonConfig, {
