@@ -8,7 +8,7 @@
 namespace HM\Media\Justified_Gallery;
 
 function setup() {
-	add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_scripts' );
+	add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_scripts', 20 );
 }
 
 function enqueue_scripts() {

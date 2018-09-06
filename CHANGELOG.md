@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## v0.1.4
+
+- When editing an image in the post edit screen the editing experience is loaded with an option to change the image
+- Split out the image editor views JS
+- Fix justified library in non script debug mode
+
+## v0.1.3
+
+- Minor bug fixes
+- Styling updates
+
 ## v0.1.2
 
 - Ensure only image attachment JS is modified

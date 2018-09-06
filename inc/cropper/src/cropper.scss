@@ -7,6 +7,18 @@
 .media-image-edit {
 	display: flex;
 	align-items: stretch;
+	max-height: 100%;
+}
+
+.media-frame.mode-edit-image {
+	.media-image-edit {
+		margin-right: 30%;
+	}
+
+	.media-sidebar {
+		width: 30%;
+		box-sizing: border-box;
+	}
 }
 
 .hm-thumbnail-sizes {

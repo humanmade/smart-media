@@ -1,24 +1,48 @@
-import jQuery from 'jQuery';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
-import ajax from '@wordpress/ajax';
-import smartcrop from 'smartcrop';
+import ImageEditView from './views/image-edit';
 
 import './cropper.scss';
-
-const $ = jQuery;
 
 // Create a high level event we can hook into for media frame creation.
 const MediaFrame = Media.view.MediaFrame;
 
-// Override the MediaFrame on the global.
+// Override the MediaFrame on the global - this is used for media.php.
 Media.view.MediaFrame = MediaFrame.extend( {
   initialize() {
     MediaFrame.prototype.initialize.apply( this, arguments );
 
     // Fire a high level init event.
     Media.events.trigger( 'frame:init', this );
-  }
+  },
+} );
+
+// Used on edit.php
+const MediaFrameSelect = Media.view.MediaFrame.Select;
+Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
+  initialize( options ) {
+    MediaFrameSelect.prototype.initialize.apply( this, arguments );
+
+    const button = Object.assign( {}, options.button || {} );
+
+    // Fire a high level init event.
+    Media.events.trigger( 'frame:select:init', this );
+
+    // Prevent previously hidden regions coming back.
+    this.on( 'activate', () => {
+      if ( this.$el.hasClass( 'hide-menu' ) && this.lastState() ) {
+        this.lastState().set( 'menu', false );
+      }
+    } );
+
+    // Reset the button as options are updated globally and causes some setup steps not to run.
+    this.on( 'toolbar:create:select', () => {
+      if ( button ) {
+        this.options.mutableButton = Object.assign( {}, this.options.button );
+        this.options.button = Object.assign( {}, button );
+      }
+    } );
+  },
 } );
 
 // Replace TwoColumn view.
@@ -40,234 +64,143 @@ Media.events.on( 'frame:init', () => {
   } );
 } );
 
-/**
- * The main image editor content area.
- */
-const ImageEditView = Media.View.extend( {
-  template: template( 'hm-thumbnail-container' ),
-  initialize() {
-    // Set the current size being edited.
-    if ( ! this.model.get( 'size' ) ) {
-      this.model.set( { size: 'full' } );
-    }
+// Add edit state to MediaFrameSelect.
+Media.events.on( 'frame:select:init', frame => {
 
-    // Re-render on certain updates.
-    this.listenTo( this.model, 'change', this.onUpdate );
-
-    this.views.add( [
-      // Add the sizes list.
-      new ImageEditSizes( {
-        controller: this.controller,
-        model: this.model,
-        priority: 10,
-      } ),
-      // Add the editor view.
-      new ImageEditor( {
-        controller: this.controller,
-        model: this.model,
-        priority: 50,
-      } ),
-    ] );
-
-    // Render views - use the built in render method as it'll handle subviews too.
-    this.render();
-  },
-} );
-
-ImageEditView.load = controller => new ImageEditView( {
-  controller: controller,
-  model: controller.model,
-  el: document.querySelector( '.media-image-edit' ),
-} );
-
-/**
- * Image size selector.
- */
-const ImageEditSizes = Media.View.extend( {
-  tagName: 'div',
-  className: 'hm-thumbnail-sizes',
-  template: template( 'hm-thumbnail-sizes' ),
-  events: {
-    'click button': 'setSize',
-  },
-  initialize() {
-    this.listenTo( this.model, 'change:sizes', this.render );
-  },
-  setSize( e ) {
-    this.model.set( { size: e.currentTarget.dataset.size } );
-    e.currentTarget.parentNode.parentNode.querySelectorAll( 'button' ).forEach( button => {
-      button.className = '';
-    } );
-    e.currentTarget.className = 'current';
-  },
-} );
-
-/**
- * Image editor.
- */
-const ImageEditor = Media.View.extend( {
-  tagName: 'div',
-  className: 'hm-thumbnail-editor',
-  template: template( 'hm-thumbnail-editor' ),
-  events: {
-    'click .button-apply-changes': 'saveCrop',
-    'click .button-reset': 'reset',
-  },
-  initialize() {
-    // Re-render on size change.
-    this.listenTo( this.model, 'change:size', this.loadEditor );
-
-    // Set window imageEdit._view to this.
-    if ( window.imageEdit ) {
-      window.imageEdit._view = this;
-    }
-  },
-  loadEditor() {
-    // Re-render.
-    this.render();
-
-    const size = this.model.get( 'size' );
-
-    // Load cropper if we picked a thumbnail.
-    if ( size !== 'full' && size !== 'full-orig' ) {
-      this.initCropper();
-    }
-  },
-  refresh() {
-    this.update();
-  },
-  back() {},
-  save() {
-    this.update();
-  },
-  update() {
-    this.model.fetch( {
-      success: () => this.loadEditor(),
-      error: () => {},
-    } );
-  },
-  reset() {
-    const $image   = $( 'img[id^="image-preview-"]' );
-    const sizeName = this.model.get( 'size' );
-    const sizes    = this.model.get( 'sizes' );
-    const size     = sizes[ sizeName ] || null;
-
-    if ( ! size ) {
-      return;
-    }
-
-    const crop = size.cropData;
-
-    // Reset to smart crop by default.
-    if ( ! crop.hasOwnProperty( 'x' ) ) {
-      smartcrop.crop( $image.get( 0 ), {
-        width: size.width,
-        height: size.height,
-      } )
-        .then( ( { topCrop } ) => {
-          this.setSelection( topCrop );
-        } );
-    } else {
-      this.setSelection( crop );
-    }
-  },
-  saveCrop() {
-    const crop = this.cropper.getSelection();
-
-    // Disable buttons.
-    this.onSelectStart();
-
-    // @todo Show spinner.
-
-    // Send AJAX request to save the crop coordinates.
-    ajax.post( 'hm_save_crop', {
-      _ajax_nonce: this.model.get( 'nonces' ).edit,
-      id: this.model.get( 'id' ),
-      crop: {
-        x: crop.x1,
-        y: crop.y1,
-        width: crop.width,
-        height: crop.height,
-      },
-      size: this.model.get( 'size' ),
-    } )
-      // Re-enable buttons.
-      .always( () => {
-        this.onSelectEnd();
-      } )
-      .done( () => {
-        // Update & re-render.
-        this.update();
-      } )
-      .fail( error => console.log( error ) );
-  },
-  setSelection( crop ) {
-    this.onSelectStart();
-
-    if ( ! crop || typeof crop.x === 'undefined' ) {
-      this.cropper.setOptions( { show: true } );
-      this.cropper.update();
-      return;
-    }
-
-    this.cropper.setSelection( crop.x, crop.y, crop.x + crop.width, crop.y + crop.height );
-    this.cropper.setOptions( { show: true } );
-    this.cropper.update();
-  },
-  onSelectStart() {
-    $( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
-  },
-  onSelectEnd() {
-    $( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
-  },
-  onSelectChange() {
-    $( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
-  },
-  initCropper() {
-    const view     = this;
-    const $image   = $( 'img[id^="image-preview-"]' );
-    const $parent  = $image.parent();
-    const sizeName = this.model.get( 'size' );
-    const sizes    = this.model.get( 'sizes' );
-    const size     = sizes[ sizeName ] || null;
-
-    if ( ! size ) {
-      // Handle error.
-      return;
-    }
-
-    const aspectRatio = `${size.width}:${size.height}`;
-
-    // Load imgAreaSelect.
-    this.cropper = $image.imgAreaSelect( {
-			parent: $parent,
-			instance: true,
-			handles: true,
-      keys: true,
-      imageWidth: this.model.get( 'width' ),
-      imageHeight: this.model.get( 'height' ),
-			minWidth: size.width,
-      minHeight: size.height,
-      aspectRatio: aspectRatio,
-      onInit( img ) {
-        // Ensure that the imgAreaSelect wrapper elements are position:absolute.
-        // (even if we're in a position:fixed modal)
-        const $img = $( img );
-        $img.next().css( 'position', 'absolute' )
-          .nextAll( '.imgareaselect-outer' ).css( 'position', 'absolute' );
-
-        // Set initial crop.
-        view.reset();
-      },
-			onSelectStart() {
-        view.onSelectStart( ...arguments );
-      },
-			onSelectEnd() {
-        view.onSelectEnd( ...arguments );
-			},
-			onSelectChange() {
-        view.onSelectChange( ...arguments );
-			}
-		});
+  // Don't do any unnecessary work.
+  if ( ! frame.states.where( { id: 'library' } ).length ) {
+    return;
   }
+  if ( frame.states.where( { id: 'edit' } ).length ) {
+    return;
+  }
+
+  const libraryState = frame.state( 'library' );
+
+  // Create new editing state.
+  const editState = frame.states.add( {
+    id: 'edit',
+    title: 'Edit image',
+    router: false,
+    menu: false,
+    uploader: false,
+    selection: frame.state( 'library' ).get( 'selection' ),
+    library: frame.state( 'library' ).get( 'library' ),
+  } );
+
+  // Set region modes when entering and leaving edit state.
+  editState.on( 'activate', () => {
+    frame.$el.toggleClass( 'mode-select mode-edit-image' );
+    frame.content.mode( 'edit' );
+    frame.toolbar.mode( 'edit' );
+  } );
+
+  editState.on( 'deactivate', () => {
+    frame.$el.toggleClass( 'mode-select mode-edit-image' );
+  } );
+
+  editState.sidebar = new Media.view.Sidebar( {
+    controller: frame,
+  } );
+
+  // Update the views for the regions in edit mode.
+  frame.on( 'content:create:edit', region => {
+    region.view = [
+      new ImageEditView( {
+        tagName: 'div',
+        className: 'media-image-edit',
+        controller: frame,
+        model: frame.state( 'edit' ).get( 'selection' ).first(),
+      } ),
+      editState.sidebar,
+    ];
+  } );
+
+  frame.on( 'toolbar:create:edit', region => {
+    region.view = new Media.view.Toolbar( {
+      controller: frame,
+      requires: { selection: true },
+      reset: false,
+      event: 'select',
+      items: {
+        change: {
+          text: 'Change image',
+          click() {
+            frame.setState( frame.lastState() );
+          },
+          priority: 20,
+          requires: { selection: true },
+        },
+        apply: {
+          style: 'primary',
+          text: 'Select',
+          click: () => {
+            const { close, event, reset, state } = frame.options.mutableButton || frame.options.button || {};
+
+            if ( close ) {
+              frame.close();
+            }
+
+            if ( event ) {
+              frame.state().trigger( event || 'select' );
+            }
+
+            if ( state ) {
+              frame.setState( state );
+            }
+
+            if ( reset ) {
+              frame.reset();
+            }
+          },
+          priority: 10,
+          requires: { selection: true },
+        },
+      },
+    } );
+  } );
+
+  // Switch state on selection of a new single image.
+  editState.get( 'selection' ).on( 'selection:single', function () {
+    frame.setState( 'edit' );
+
+    // Set sidebar views.
+    const { sidebar } = editState;
+    const single = editState.get( 'selection' ).single();
+
+
+		sidebar.set( 'details', new Media.view.Attachment.Details( {
+			controller: this.controller,
+			model: single,
+			priority: 80
+		} ) );
+
+		sidebar.set( 'compat', new Media.view.AttachmentCompat( {
+			controller: this.controller,
+			model: single,
+			priority: 120
+    } ) );
+
+    const display = libraryState.has( 'display' ) ? libraryState.get( 'display' ) : libraryState.get( 'displaySettings' );
+
+    if ( display ) {
+      sidebar.set( 'display', new Media.view.Settings.AttachmentDisplay( {
+        controller:   this.controller,
+        model:        this.model.display( single ),
+        attachment:   single,
+        priority:     160,
+        userSettings: this.model.get( 'displayUserSettings' )
+      } ) );
+    }
+
+    // Show the sidebar on mobile
+    if ( this.model.id === 'insert' ) {
+      sidebar.$el.addClass( 'visible' );
+    }
+  } );
+
+  editState.get( 'selection' ).on( 'selection:unsingle', function () {
+    frame.setState( 'library' );
+  } );
+
 } );
