@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.1.5
+
+- Added focal point cropping feature
+
 ## v0.1.4
 
 - When editing an image in the post edit screen the editing experience is loaded with an option to change the image

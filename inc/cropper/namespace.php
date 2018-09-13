@@ -19,7 +19,8 @@ function setup() {
 
 	// Save crop data.
 	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
-	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image', -1 );
+	add_action( 'wp_ajax_hm_save_focal_point', __NAMESPACE__ . '\\ajax_save_focal_point' );
+	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image', -10 );
 
 	// Output backbone templates.
 	add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
@@ -58,6 +59,13 @@ function enqueue_scripts( $hook = false ) {
 		false
 	);
 
+	/**
+	 * Toggle focal point cropping support.
+	 *
+	 * @param bool $use_focal_point Pass true to enable focal point support.
+	 */
+	$use_focal_point = apply_filters( 'hm.smart-media.cropper.focal-point', true );
+
 	wp_add_inline_script(
 		'hm-smart-media-cropper',
 		sprintf( 'var HM = HM || {}; HM.SmartMedia = %s;', wp_json_encode( [
@@ -67,8 +75,7 @@ function enqueue_scripts( $hook = false ) {
 				'cropClose' => __( 'Close editor', 'hm-smart-media' ),
 				'cropEdit'  => __( 'Edit crop', 'hm-smart-media' ),
 			],
-			'sizes' => get_image_sizes(),
-			'FocalPoints' => false,
+			'FocalPoint' => $use_focal_point,
 		] ) )
 	);
 }
@@ -87,11 +94,9 @@ function image_downsize( $tachyon_args, $downsize_args ) {
 
 	$crop = get_crop( $downsize_args['attachment_id'], $downsize_args['size'] );
 
-	if ( ! $crop ) {
-		return $tachyon_args;
+	if ( $crop ) {
+		$tachyon_args['crop'] = $crop;
 	}
-
-	$tachyon_args['crop'] = $crop;
 
 	return $tachyon_args;
 }
@@ -104,15 +109,61 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  * @return array|false
  */
 function get_crop( $attachment_id, $size ) {
-	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true );
+	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true ) ?: [];
+
+	// Infer crop from focal point if available.
+	if ( empty( $crop ) ) {
+		$meta_data = wp_get_attachment_metadata( $attachment_id );
+		$size      = get_image_sizes()[ $size ];
+
+		$focal_point = get_post_meta( $attachment_id, '_focal_point', true ) ?: [];
+		$focal_point = array_map( 'absint', $focal_point );
+
+		if ( ! empty( $focal_point ) && $size['crop'] ) {
+			// Get max size of crop aspect ratio within original image.
+			$dimensions = get_maximum_crop( $meta_data['width'], $meta_data['height'], $size['width'], $size['height'] );
+
+			if ( $dimensions[0] === $meta_data['width'] && $dimensions[1] === $meta_data['height'] ) {
+				return false;
+			}
+
+			$crop['width']  = $dimensions[0];
+			$crop['height'] = $dimensions[1];
+
+			// Set x & y but constrain within original image bounds.
+			$crop['x'] = min( $meta_data['width'] - $crop['width'], max( 0, $focal_point['x'] - ( $crop['width'] / 2 ) ) );
+			$crop['y'] = min( $meta_data['height'] - $crop['height'], max( 0, $focal_point['y'] - ( $crop['height'] / 2 ) ) );
+
+			if ( $crop['x'] === 0 && $crop['y'] === 0 ) {
+				return false;
+			}
+		}
+	}
 
 	if ( empty( $crop ) ) {
 		return false;
 	}
 
-	return implode( ',', array_map( function ( $value ) {
-		return sprintf( '%dpx', $value );
-	}, $crop ) );
+	return sprintf( '%dpx,%dpx,%dpx,%dpx', $crop['x'], $crop['y'], $crop['width'], $crop['height'] );
+}
+
+/**
+ * Get the maximum size of a target crop within the original image width & height.
+ *
+ * @param integer $width
+ * @param integer $height
+ * @param integer $crop_width
+ * @param integer $crop_height
+ * @return array
+ */
+function get_maximum_crop( int $width, int $height, int $crop_width, int $crop_height ) {
+	$max_height = $width / $crop_width * $crop_height;
+
+	if ( $max_height < $height ) {
+		return [ $width, round( $max_height ) ];
+	}
+
+	return [ round( $height / $crop_height * $crop_width ), $height ];
 }
 
 /**
@@ -170,6 +221,9 @@ function attachment_js( $response, $attachment ) {
 	}, $sizes, array_keys( $sizes ) );
 	$response['sizes'] = array_combine( array_keys( $sizes ), $response['sizes'] );
 
+	// Focal point.
+	$response['focalPoint'] = (object) ( get_post_meta( $attachment->ID, '_focal_point', true ) ?: [] );
+
 	return $response;
 }
 
@@ -195,6 +249,29 @@ function ajax_save_crop() {
 
 	// Save crop coordinates.
 	update_post_meta( $attachment->ID, "_crop_{$name}", $crop );
+
+	wp_send_json_success();
+}
+
+/**
+ * AJAX handler for saving the cropping coordinates of a thumbnail size for a given attachment.
+ */
+function ajax_save_focal_point() {
+	// Get the attachment.
+	$attachment = validate_parameters();
+
+	check_ajax_referer( 'image_editor-' . $attachment->ID );
+
+	if ( ! isset( $_POST['focalPoint'] ) ) {
+		wp_send_json_error( __( 'No focal point data received', 'hm-smart-media' ) );
+	}
+
+	if ( empty( $_POST['focalPoint'] ) ) {
+		delete_post_meta( $attachment->ID, '_focal_point' );
+	} else {
+		$focal_point = map_deep( wp_unslash( $_POST['focalPoint'] ), 'absint' );
+		update_post_meta( $attachment->ID, '_focal_point', $focal_point );
+	}
 
 	wp_send_json_success();
 }
@@ -246,6 +323,7 @@ function get_thumbnail_dimensions( $size ) {
 	switch ( $size ) {
 		case 'thumbnail':
 		case 'medium':
+		case 'medium_large':
 		case 'large':
 			$width  = get_option( $size . '_size_w' );
 			$height = get_option( $size . '_size_h' );
@@ -356,16 +434,23 @@ function on_edit_image() {
 	check_ajax_referer( 'image_editor-' . $attachment->ID );
 
 	// Only run on a save operation.
-	if ( isset( $_POST['do'] ) && $_POST['do'] !== 'save' ) {
+	if ( isset( $_POST['do'] ) && ! in_array( $_POST['do'], [ 'save', 'restore' ], true ) ) {
 		return;
 	}
 
 	// Only run if transformations being applied.
-	if ( ! isset( $_POST['history'] ) || empty( json_decode( wp_unslash( $_POST['history'] ), true ) ) ) {
+	if ( $_POST['do'] === 'save' && ( ! isset( $_POST['history'] ) || empty( json_decode( wp_unslash( $_POST['history'] ), true ) ) ) ) {
 		return;
 	}
 
+	// Remove crops as dimensions / orientation may have changed.
 	foreach ( array_keys( get_image_sizes() ) as $size ) {
 		delete_coordinates( $attachment->ID, $size );
 	}
+
+	// Remove focal point.
+	delete_post_meta( $attachment->ID, '_focal_point' );
+
+	// @todo update crop coordinates according to history steps
+	// @todo update focal point coordinates according to history steps
 }

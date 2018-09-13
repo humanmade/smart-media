@@ -16,15 +16,20 @@ const ImageEditor = Media.View.extend( {
 	events: {
 		'click .button-apply-changes': 'saveCrop',
 		'click .button-reset': 'reset',
+		'click .image-preview-full': 'onClickPreview',
+		'click .focal-point': 'removeFocalPoint',
+		'click .imgedit-menu button': 'onEditImage',
 	},
 	initialize() {
 		// Re-render on size change.
 		this.listenTo( this.model, 'change:size', this.loadEditor );
 		this.on( 'ready', this.loadEditor );
 
-		// Set window imageEdit._view to this.
+		// Set window imageEdit._view to this and no-op built in crop tool.
 		if ( window.imageEdit ) {
 			window.imageEdit._view = this;
+			window.imageEdit.initCrop = () => {};
+			window.imageEdit.setCropSelection = () => {};
 		}
 	},
 	loadEditor() {
@@ -32,9 +37,12 @@ const ImageEditor = Media.View.extend( {
 
 		const size = this.model.get( 'size' );
 
-		// Load cropper if we picked a thumbnail.
 		if ( size !== 'full' && size !== 'full-orig' ) {
+			// Load cropper if we picked a thumbnail.
 			this.initCropper();
+		} else {
+			// Load focal point UI.
+			this.initFocalPoint();
 		}
 	},
 	refresh() {
@@ -51,25 +59,40 @@ const ImageEditor = Media.View.extend( {
 		} );
 	},
 	reset() {
-		const $image   = $( 'img[id^="image-preview-"]' );
-		const sizeName = this.model.get( 'size' );
-		const sizes    = this.model.get( 'sizes' );
-		const size     = sizes[ sizeName ] || null;
+		const $image     = $( 'img[id^="image-preview-"]' );
+		const sizeName   = this.model.get( 'size' );
+		const sizes      = this.model.get( 'sizes' );
+		const focalPoint = this.model.get( 'focalPoint' );
+		const size       = sizes[ sizeName ] || null;
 
 		if ( ! size ) {
-		return;
+			return;
 		}
 
 		const crop = size.cropData;
 
 		// Reset to smart crop by default.
 		if ( ! crop.hasOwnProperty( 'x' ) ) {
-			smartcrop.crop( $image.get( 0 ), {
+			const options = {
 				width: size.width,
 				height: size.height,
-			} )
+			};
+
+			// Boost focal point.
+			if ( focalPoint ) {
+				options.boost = [ {
+					x: focalPoint.x,
+					y: focalPoint.y,
+					width: size.width,
+					height: size.height,
+					weight: 1,
+				} ];
+			}
+
+			smartcrop
+				.crop( $image.get( 0 ), options )
 				.then( ( { topCrop } ) => {
-				this.setSelection( topCrop );
+					this.setSelection( topCrop );
 				} );
 		} else {
 			this.setSelection( crop );
@@ -171,7 +194,55 @@ const ImageEditor = Media.View.extend( {
 				view.onSelectChange( ...arguments );
 			}
 		} );
-	}
+	},
+	initFocalPoint() {
+		const width = this.model.get( 'width' );
+		const height = this.model.get( 'height' );
+		const focalPoint = this.model.get( 'focalPoint' ) || {};
+		const $focalPoint = this.$el.find( '.focal-point' );
+
+		if ( focalPoint.hasOwnProperty( 'x' ) && focalPoint.hasOwnProperty( 'y' ) ) {
+			$focalPoint.css( {
+				left: `${ ( 100 / width ) * focalPoint.x }%`,
+				top: `${ ( 100 / height ) * focalPoint.y }%`,
+				display: 'block',
+			} );
+		}
+	},
+	onClickPreview( event ) {
+		const width = this.model.get( 'width' );
+		const height = this.model.get( 'height' );
+		const x = event.offsetX * ( width / event.currentTarget.offsetWidth );
+		const y = event.offsetY * ( height / event.currentTarget.offsetHeight );
+		const $focalPoint = this.$el.find( '.focal-point' );
+
+		$focalPoint.css( {
+			left: `${ ( 100 / width ) * x }%`,
+			top: `${ ( 100 / height ) * y }%`,
+			display: 'block',
+		} );
+
+		this.setFocalPoint( { x, y } );
+	},
+	setFocalPoint( coords ) {
+		ajax.post( 'hm_save_focal_point', {
+			_ajax_nonce: this.model.get( 'nonces' ).edit,
+			id: this.model.get( 'id' ),
+			focalPoint: coords,
+		} )
+			.done( () => {
+				this.update();
+			} )
+			.fail( error => console.log( error ) );
+	},
+	removeFocalPoint( event ) {
+		this.$el.find( '.focal-point' ).hide();
+		event.stopPropagation();
+		this.setFocalPoint( false );
+	},
+	onEditImage() {
+		this.$el.find( '.focal-point, .note-focal-point' ).hide();
+	},
 } );
 
 export default ImageEditor;

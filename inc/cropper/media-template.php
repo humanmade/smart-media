@@ -175,7 +175,7 @@
 						{{ size.replace( /[_-]+/g,' ' ) }}
 						<small>{{ props.width }} x {{ props.height }}</small>
 					</h3>
-					<img src="{{ props.url }}" width="{{ props.width }}" height="{{ props.height }}" alt="{{ size }}" draggable="false" />
+					<img src="{{ props.url }}" height="80" alt="{{ size }}" draggable="false" />
 				</button>
 			</li>
 			<# } #>
@@ -193,30 +193,18 @@
 		<div class="imgedit-menu wp-clearfix">
 
 			<# if ( data.model.get('editor').can.rotate ) { #>
-			<button type="button" class="imgedit-rleft button" onclick="imageEdit.rotate( 90, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)"><span class="screen-reader-text"><?php esc_html_e( 'Rotate counter-clockwise' ); ?></span></button>
-			<button type="button" class="imgedit-rright button" onclick="imageEdit.rotate(-90, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)"><span class="screen-reader-text"><?php esc_html_e( 'Rotate clockwise' ); ?></span></button>
+			<button type="button" class="imgedit-rleft button" onclick="imageEdit.rotate( 90, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate counter-clockwise' ); ?></span></button>
+			<button type="button" class="imgedit-rright button" onclick="imageEdit.rotate( -90, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate clockwise' ); ?></span></button>
 			<# } else { #>
 			<button type="button" class="imgedit-rleft button disabled" disabled></button>
 			<button type="button" class="imgedit-rright button disabled" disabled></button>
 			<# } #>
 
-			<button type="button" onclick="imageEdit.flip(1, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-flipv button"><span class="screen-reader-text"><?php esc_html_e( 'Flip vertically' ); ?></span></button>
-			<button type="button" onclick="imageEdit.flip(2, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-fliph button"><span class="screen-reader-text"><?php esc_html_e( 'Flip horizontally' ); ?></span></button>
+			<button type="button" onclick="imageEdit.flip( 1, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-flipv button"><span class="screen-reader-text"><?php esc_html_e( 'Flip vertically' ); ?></span></button>
+			<button type="button" onclick="imageEdit.flip( 2, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-fliph button"><span class="screen-reader-text"><?php esc_html_e( 'Flip horizontally' ); ?></span></button>
 
-			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
-			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this)" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
-
-			<# if ( HM.SmartMedia.FocalPoints ) { #>
-				<# if ( data.model.get('focalPoints').length ) { #>
-					<button type="button" class="imgedit-focal-points button"><?php esc_html_e( 'Set focal points', 'hm-smart-media' ); ?></button>
-				<# } else { #>
-					<button type="button" class="imgedit-focal-points button"><?php esc_html_e( 'Edit focal points', 'hm-smart-media' ); ?></button>
-				<# } #>
-			<# } #>
-
-			<# if ( ! data.model.get('editor').can.rotate ) { #>
-				<p class="note-no-rotate"><em><?php esc_html_e( 'Image rotation is not supported by your web host.' ); ?></em></p>
-			<# } #>
+			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
+			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
 
 			<input type="hidden" id="imgedit-sizer-{{ data.model.get( 'id' ) }}" value="{{ data.model.get( 'editor' ).sizer }}" />
 			<input type="hidden" id="imgedit-history-{{ data.model.get( 'id' ) }}" value="" />
@@ -226,17 +214,29 @@
 			<input type="hidden" id="imgedit-y-{{ data.model.get( 'id' ) }}" value="{{ data.model.get( 'height' ) || 0 }}" />
 
 			<div class="imgedit-wait" id="imgedit-wait-{{ data.model.get( 'id' ) }}"></div>
+
+			<# if ( HM.SmartMedia.FocalPoint ) { #>
+				<p class="note-focal-point"><?php esc_html_e( 'Click anywhere on the image to set a focal point for automatic cropping.', 'hm-smart-media' ); ?></p>
+			<# } #>
+
+			<# if ( ! data.model.get('editor').can.rotate ) { #>
+				<p class="note-no-rotate"><em><?php esc_html_e( 'Image rotation is not supported by your web host.' ); ?></em></p>
+			<# } #>
 		</div>
 	<# } else { #>
 		<div class="imgedit-menu wp-clearfix">
 			<button type="button" class="button imgedit-crop button-apply-changes" disabled><span class="screen-reader-text"><?php esc_html_e( 'Apply changes', 'hm-smart-media' ); ?></span></button>
 			<button type="button" class="button imgedit-undo button-reset" disabled><span class="screen-reader-text"><?php esc_html_e( 'Reset', 'hm-smart-media' ); ?></span></button>
+			<# if ( ! data.model.get('sizes')[ data.model.get('size') ].cropData.x ) { #>
+				<p class="note-auto-crop"><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.' ); ?></p>
+			<# } #>
 		</div>
 	<# } #>
 	<div class="hm-thumbnail-editor__image-wrap">
 		<div class="hm-thumbnail-editor__image">
 			<div  class="hm-thumbnail-editor__image-crop imgedit-crop-wrap" id="imgedit-crop-{{ data.model.get( 'id' ) }}">
 				<img
+					class="image-preview image-preview-{{ data.model.get( 'size' ) }}"
 					id="image-preview-{{ data.model.get( 'id' ) }}"
 					src="{{ data.model.get( 'tachyonURL' ) || data.model.get('url') }}"
 					width="{{ data.model.get('width') }}"
@@ -245,17 +245,14 @@
 					draggable="false"
 				/>
 			</div>
+			<div class="hm-thumbnail-editor__focal-point focal-point" title="<?php esc_attr_e( 'Click to remove focal point', 'hm-smart-media' ); ?>"></div>
 		</div>
 	</div>
 	<div class="hm-thumbnail-editor__actions" id="imgedit-panel-{{ data.model.get( 'id' ) }}">
 		<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
-			<input type="button" onclick="imageEdit.save({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}')" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
+			<input type="button" onclick="imageEdit.save( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}' )" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
 			<# if ( data.model.get('editor').can.restore ) { #>
-				<input type="button" onclick="imageEdit.action({{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', 'restore')" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
-			<# } #>
-		<# } else { #>
-			<# if ( ! data.model.get('sizes')[ data.model.get('size') ].cropData.x ) { #>
-				<p><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.' ); ?></p>
+				<input type="button" onclick="imageEdit.action( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', 'restore' )" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
 			<# } #>
 		<# } #>
 	</div>
