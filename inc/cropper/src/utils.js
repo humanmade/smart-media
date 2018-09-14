@@ -16,3 +16,22 @@ export const toJSONDeep = object => {
 	}
 	return json;
 }
+
+/**
+ * Get the maximum crop size within in a bounding box.
+ *
+ * @param {int} width
+ * @param {int} height
+ * @param {int} cropWidth
+ * @param {int} cropHeight
+ * @returns {array}
+ */
+export const getMaxCrop = ( width, height, cropWidth, cropHeight ) => {
+	const maxHeight = width / cropWidth * cropHeight;
+
+	if ( maxHeight < height ) {
+		return [ width, Math.round( maxHeight ) ];
+	}
+
+	return [ Math.round( height / cropHeight * cropWidth ), height ];
+}

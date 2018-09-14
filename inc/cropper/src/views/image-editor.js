@@ -3,6 +3,7 @@ import template from '@wordpress/template';
 import ajax from '@wordpress/ajax';
 import jQuery from 'jQuery';
 import smartcrop from 'smartcrop';
+import { getMaxCrop } from '../utils';
 
 const $ = jQuery;
 
@@ -63,6 +64,8 @@ const ImageEditor = Media.View.extend( {
 		const sizeName   = this.model.get( 'size' );
 		const sizes      = this.model.get( 'sizes' );
 		const focalPoint = this.model.get( 'focalPoint' );
+		const width      = this.model.get( 'width' );
+		const height     = this.model.get( 'height' );
 		const size       = sizes[ sizeName ] || null;
 
 		if ( ! size ) {
@@ -71,29 +74,27 @@ const ImageEditor = Media.View.extend( {
 
 		const crop = size.cropData;
 
-		// Reset to smart crop by default.
+		// Reset to focal point or smart crop by default.
 		if ( ! crop.hasOwnProperty( 'x' ) ) {
-			const options = {
-				width: size.width,
-				height: size.height,
-			};
+			if ( focalPoint.hasOwnProperty( 'x' ) ) {
+				const [ cropWidth, cropHeight ] = getMaxCrop( width, height, size.width, size.height );
 
-			// Boost focal point.
-			if ( focalPoint ) {
-				options.boost = [ {
-					x: focalPoint.x,
-					y: focalPoint.y,
-					width: size.width,
-					height: size.height,
-					weight: 1,
-				} ];
-			}
-
-			smartcrop
-				.crop( $image.get( 0 ), options )
-				.then( ( { topCrop } ) => {
-					this.setSelection( topCrop );
+				this.setSelection( {
+					x: Math.min( width - cropWidth, Math.max( 0, focalPoint.x - ( cropWidth / 2 ) ) ),
+					y: Math.min( height - cropHeight, Math.max( 0, focalPoint.y - ( cropHeight / 2 ) ) ),
+					width: cropWidth,
+					height: cropHeight,
 				} );
+			} else {
+				smartcrop
+					.crop( $image.get( 0 ), {
+						width: size.width,
+						height: size.height,
+					} )
+					.then( ( { topCrop } ) => {
+						this.setSelection( topCrop );
+					} );
+			}
 		} else {
 			this.setSelection( crop );
 		}
@@ -217,8 +218,8 @@ const ImageEditor = Media.View.extend( {
 		const $focalPoint = this.$el.find( '.focal-point' );
 
 		$focalPoint.css( {
-			left: `${ ( 100 / width ) * x }%`,
-			top: `${ ( 100 / height ) * y }%`,
+			left: `${ Math.round( ( 100 / width ) * x ) }%`,
+			top: `${ Math.round( ( 100 / height ) * y ) }%`,
 			display: 'block',
 		} );
 

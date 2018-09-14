@@ -133,10 +133,6 @@ function get_crop( $attachment_id, $size ) {
 			// Set x & y but constrain within original image bounds.
 			$crop['x'] = min( $meta_data['width'] - $crop['width'], max( 0, $focal_point['x'] - ( $crop['width'] / 2 ) ) );
 			$crop['y'] = min( $meta_data['height'] - $crop['height'], max( 0, $focal_point['y'] - ( $crop['height'] / 2 ) ) );
-
-			if ( $crop['x'] === 0 && $crop['y'] === 0 ) {
-				return false;
-			}
 		}
 	}
 

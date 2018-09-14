@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.1.6
+
+- Bug fixes for focal point generated thumbs, bypass smart crop entirely
+
 ## v0.1.5
 
 - Added focal point cropping feature
