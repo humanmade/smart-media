@@ -12,7 +12,7 @@ use function HM\Media\get_asset_url;
  */
 function setup() {
 	// Add initial crop data for js attachment models.
-	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 10, 3 );
+	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 200, 3 );
 
 	// Add scripts for cropper whenever media modal is loaded.
 	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 1 );
@@ -34,7 +34,8 @@ function setup() {
 	add_filter( 'tachyon_pre_args', __NAMESPACE__ . '\\tachyon_args' );
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
 
-	// @todo Disable intermediate size generation but preserve sizes metadata.
+	// Disable intermediate thumbnail file generation.
+	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\prevent_thumbnail_generation' );
 
 	// Add crop data.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
@@ -215,6 +216,7 @@ function attachment_js( $response, $attachment ) {
 
 		return $size;
 	}, $sizes, array_keys( $sizes ) );
+
 	$response['sizes'] = array_combine( array_keys( $sizes ), $response['sizes'] );
 
 	// Focal point.
@@ -449,4 +451,19 @@ function on_edit_image() {
 
 	// @todo update crop coordinates according to history steps
 	// @todo update focal point coordinates according to history steps
+}
+
+/**
+ * Prevents WordPress generated resized thumbnails for an image.
+ * We let tachyon handle this.
+ *
+ * @param array $sizes
+ * @return array
+ */
+function prevent_thumbnail_generation( $sizes ) {
+	if ( ! function_exists( 'tachyon_url' ) ) {
+		return $sizes;
+	}
+
+	return [];
 }

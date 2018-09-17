@@ -151,11 +151,11 @@
 	</div>
 </script>
 
-<script type="text/template" id="tmpl-hm-thumbnail-container">
+<script type="text/html" id="tmpl-hm-thumbnail-container">
 	<div class="spinner is-active"></div>
 </script>
 
-<script type="text/template" id="tmpl-hm-thumbnail-sizes">
+<script type="text/html" id="tmpl-hm-thumbnail-sizes">
 	<h2 class="screen-reader-text"><?php esc_html_e( 'Image sizes', 'hm-smart-media' ); ?></h2>
 	<ul class="hm-thumbnail-sizes__list">
 		<li>
@@ -183,7 +183,7 @@
 	</ul>
 </script>
 
-<script type="text/template" id="tmpl-hm-thumbnail-editor">
+<script type="text/html" id="tmpl-hm-thumbnail-editor">
 	<# if ( data.model.get('size') === 'full' || data.model.get('size') === 'full-orig' ) { #>
 		<h2><?php esc_html_e( 'Edit original image' ) ?> <small>{{ data.model.get('width') }} x {{ data.model.get('height') }}</small></h2>
 	<# } else { #>
@@ -203,8 +203,8 @@
 			<button type="button" onclick="imageEdit.flip( 1, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-flipv button"><span class="screen-reader-text"><?php esc_html_e( 'Flip vertically' ); ?></span></button>
 			<button type="button" onclick="imageEdit.flip( 2, {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-fliph button"><span class="screen-reader-text"><?php esc_html_e( 'Flip horizontally' ); ?></span></button>
 
-			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
-			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo( {{ data.model.get('id') }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
+			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo( {{ data.model.get( 'id' ) }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
+			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo( {{ data.model.get( 'id' ) }}, '{{ data.model.get('editor').nonce }}', this )" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
 
 			<input type="hidden" id="imgedit-sizer-{{ data.model.get( 'id' ) }}" value="{{ data.model.get( 'editor' ).sizer }}" />
 			<input type="hidden" id="imgedit-history-{{ data.model.get( 'id' ) }}" value="" />
@@ -227,7 +227,7 @@
 		<div class="imgedit-menu wp-clearfix">
 			<button type="button" class="button imgedit-crop button-apply-changes" disabled><span class="screen-reader-text"><?php esc_html_e( 'Apply changes', 'hm-smart-media' ); ?></span></button>
 			<button type="button" class="button imgedit-undo button-reset" disabled><span class="screen-reader-text"><?php esc_html_e( 'Reset', 'hm-smart-media' ); ?></span></button>
-			<# if ( ! data.model.get('sizes')[ data.model.get('size') ].cropData.x ) { #>
+			<# if ( data.model.get( 'size' ) && data.model.get( 'sizes' )[ data.model.get( 'size' ) ].hasOwnProperty( 'cropData' ) && ! data.model.get( 'sizes' )[ data.model.get( 'size' ) ].cropData.hasOwnProperty( 'x' ) ) { #>
 				<p class="note-auto-crop"><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.' ); ?></p>
 			<# } #>
 		</div>

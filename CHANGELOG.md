@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.1.7
+
+- Bug fix, compat issues with CMB2
+- Disable thumbnail file generation when tachyon is enabled
+
 ## v0.1.6
 
 - Bug fixes for focal point generated thumbs, bypass smart crop entirely
