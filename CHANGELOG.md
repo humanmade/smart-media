@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.1.8
+
+- Added composer.json
+
 ## v0.1.7
 
 - Bug fix, compat issues with CMB2
