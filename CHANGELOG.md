@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.1.9
+
+- Fix bug when `full` isn't in sizes list, eg. everywhere except the HM site.
+
 ## v0.1.8
 
 - Added composer.json
