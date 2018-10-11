@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.1.10
+
+- Justified library CSS - Add media-views stylesheet as a dependency.
+- Justified library CSS - Enqueued on the `wp_enqueue_media` action to ensure they are only loaded when required.
+
 ## v0.1.9
 
 - Fix bug when `full` isn't in sizes list, eg. everywhere except the HM site.
