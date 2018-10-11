@@ -12,5 +12,5 @@ function setup() {
 }
 
 function enqueue_scripts() {
-	wp_enqueue_style( 'hm-smart-media-justified-library', plugins_url( '/justified-library.css', __FILE__ ), [ 'media-views'], null );
+	wp_enqueue_style( 'hm-smart-media-justified-library', plugins_url( '/justified-library.css', __FILE__ ), [ 'media-views' ], null );
 }
