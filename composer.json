@@ -1,6 +1,6 @@
 {
     "name": "humanmade/smart-media",
-    "description": "Smart media enhancements for HM Platform",
+    "description": "Smart Media features for HM Cloud",
     "type": "wordpress-plugin",
     "license": "GPL-3.0",
     "authors": [
