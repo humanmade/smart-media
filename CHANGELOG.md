@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v0.1.11
+
+- Bug: Justified library CSS - increase specifity
+- Bug: Load media templates on customiser
+- Bug: Don't load edit mode when built in media modal cropper state is present
+
 ## v0.1.10
 
 - Justified library CSS - Add media-views stylesheet as a dependency.

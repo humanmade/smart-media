@@ -68,10 +68,15 @@ Media.events.on( 'frame:init', () => {
 Media.events.on( 'frame:select:init', frame => {
 
   // Don't do any unnecessary work.
-  if ( ! frame.states.where( { id: 'library' } ).length ) {
+  if ( ! frame.states.get( 'library' ) ) {
     return;
   }
-  if ( frame.states.where( { id: 'edit' } ).length ) {
+  if ( frame.states.get( 'edit' ) ) {
+    return;
+  }
+
+  // Check we don't have the cropper state available, not yet compatible.
+  if ( frame.states.get( 'cropper' ) ) {
     return;
   }
 
@@ -162,23 +167,28 @@ Media.events.on( 'frame:select:init', frame => {
 
   // Switch state on selection of a new single image.
   editState.get( 'selection' ).on( 'selection:single', function () {
-    frame.setState( 'edit' );
-
-    // Set sidebar views.
     const { sidebar } = editState;
     const single = editState.get( 'selection' ).single();
 
+    // Check we're not still uploading.
+    if ( single.get( 'uploading' ) ) {
+      return;
+    }
 
-		sidebar.set( 'details', new Media.view.Attachment.Details( {
-			controller: this.controller,
-			model: single,
-			priority: 80
-		} ) );
+    // Switch to edit mode.
+    frame.setState( 'edit' );
 
-		sidebar.set( 'compat', new Media.view.AttachmentCompat( {
-			controller: this.controller,
-			model: single,
-			priority: 120
+    // Set sidebar views.
+    sidebar.set( 'details', new Media.view.Attachment.Details( {
+      controller: this.controller,
+      model: single,
+      priority: 80
+    } ) );
+
+    sidebar.set( 'compat', new Media.view.AttachmentCompat( {
+      controller: this.controller,
+      model: single,
+      priority: 120
     } ) );
 
     const display = libraryState.has( 'display' ) ? libraryState.get( 'display' ) : libraryState.get( 'displaySettings' );

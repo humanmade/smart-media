@@ -22,7 +22,7 @@ const ImageEditView = Media.View.extend( {
 	},
 	onUpdate() {
 		// If the attachment info hasn't loaded yet show a spinner.
-		if ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) {
+		if ( this.model.get( 'uploading' ) || ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) ) {
 			this.views.set( [
 				new Media.view.Spinner(),
 			] );

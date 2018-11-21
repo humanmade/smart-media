@@ -164,11 +164,11 @@
 					<?php esc_html_e( 'Original' ); ?>
 					<small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small>
 				</h3>
-				<img src="{{ data.model.get( 'tachyonURL' ) || data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
+				<img src="{{ data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
 		<# _.each( data.model.get('sizes'), function ( props, size ) { #>
-			<# if ( size !== 'full' && size !== 'full-orig' ) { #>
+			<# if ( size && size !== 'full' && size !== 'full-orig' ) { #>
 			<li>
 				<button type="button" data-size="{{ size }}" class="{{ data.model.get( 'size' ) === size ? 'current' : '' }}">
 					<h3>
@@ -238,9 +238,9 @@
 				<img
 					class="image-preview image-preview-{{ data.model.get( 'size' ) }}"
 					id="image-preview-{{ data.model.get( 'id' ) }}"
-					src="{{ data.model.get( 'tachyonURL' ) || data.model.get('url') }}"
-					width="{{ data.model.get('width') }}"
-					height="{{ data.model.get('height') }}"
+					src="{{ data.model.get( 'url' ) }}"
+					width="{{ data.model.get( 'width' ) }}"
+					height="{{ data.model.get( 'height' ) }}"
 					alt=""
 					draggable="false"
 				/>

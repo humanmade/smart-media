@@ -24,6 +24,7 @@ function setup() {
 
 	// Output backbone templates.
 	add_action( 'admin_footer', __NAMESPACE__ . '\\templates' );
+	add_action( 'customize_controls_print_footer_scripts', __NAMESPACE__ . '\\templates' );
 
 	// Preserve quality when editing original.
 	add_filter( 'jpeg_quality', __NAMESPACE__ . '\\jpeg_quality', 10, 2 );
@@ -200,7 +201,8 @@ function attachment_js( $response, $attachment ) {
 
 	// Add base Tachyon URL.
 	if ( function_exists( 'tachyon_url' ) ) {
-		$response['tachyonURL'] = tachyon_url( $response['url'] );
+		$response['original_url'] = $response['url'];
+		$response['url']          = tachyon_url( $response['url'] );
 	}
 
 	// Fill intermediate sizes array.
