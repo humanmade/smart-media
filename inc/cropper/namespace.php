@@ -40,6 +40,7 @@ function setup() {
 
 	// Add crop data.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
+	add_filter( 'tachyon_post_image_args', __NAMESPACE__ . '\\image_downsize', 10, 2 );
 }
 
 /**
