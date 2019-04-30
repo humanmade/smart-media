@@ -77,9 +77,8 @@ const commonConfig = {
 		new ManifestPlugin( {
 			writeToFileEmit: true,
 		} ),
-		new CleanWebpackPlugin( [ 'inc/*/build' ], {
-			root: path.resolve( __dirname, '..' ),
-			watch: true,
+		new CleanWebpackPlugin( {
+			cleanOnceBeforeBuildPatterns: ['inc/*/build/**/*']
 		} ),
 	],
 };
