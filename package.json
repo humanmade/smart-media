@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "smartcrop": "^2.0.3",
-    "tar": "^4.4.8",
     "tracking": "^1.1.3"
   }
 }
