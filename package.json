@@ -15,7 +15,6 @@
     "@babel/polyfill": "^7.4.4",
     "@babel/preset-env": "^7.4.4",
     "babel-loader": "^8.0.5",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "clean-webpack-plugin": "^2.0.1",
     "css-loader": "^2.1.1",
     "node-sass": "^4.12.0",
