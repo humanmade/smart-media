@@ -28,14 +28,14 @@ const commonConfig = {
 				options: {
 					babelrc: false,
 					presets: [
-						[ require( 'babel-preset-env' ), {
+						[ require( '@babel/preset-env' ), {
 							modules: false,
 							targets: { browsers: [ ' > 0.01%' ] },
 						} ],
 					],
 					plugins: [
-						require( 'babel-plugin-transform-object-rest-spread' ),
-						require( 'babel-polyfill' ),
+						require( '@babel/plugin-proposal-object-rest-spread' ),
+						require( '@babel/polyfill' ),
 					],
 				},
 			},
