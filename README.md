@@ -1,5 +1,21 @@
-Smart Media
-===========
+<table width="100%">
+	<tr>
+		<td align="left" width="70">
+			<strong>Smart Media</strong><br />
+			Enhanced media library features for WordPress.
+		</td>
+		<td align="right" width="20%">
+		</td>
+	</tr>
+	<tr>
+		<td>
+			A <strong><a href="https://hmn.md/">Human Made</a></strong> project. Maintained by @roborourke.
+		</td>
+		<td align="center">
+			<img src="https://hmn.md/content/themes/hmnmd/assets/images/hm-logo.svg" width="100" />
+		</td>
+	</tr>
+</table>
 
 Smarter media features for WordPress.
 
@@ -35,3 +51,13 @@ Planned features include:
 
 - Duplicate image detection and consolidation
 - EXIF data editor
+
+## Contributing
+
+First of all thanks for using this plugin and thanks for contributing!
+
+To get started check out the [contributing documentation](./CONTRIBUTING.md).
+
+
+
+
