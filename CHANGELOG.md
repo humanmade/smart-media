@@ -5,6 +5,7 @@ Changelog
 
 - Update: Upgraded all build scripts
 - Update: Add support for images in posts added by the block editor #9
+- Update: Add contributing docs
 
 ## v0.1.11
 
