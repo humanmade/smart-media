@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.1.12
+
+- Update: Upgraded all build scripts
+- Update: Add support for images in posts added by the block editor #9
+
 ## v0.1.11
 
 - Bug: Justified library CSS - increase specifity
