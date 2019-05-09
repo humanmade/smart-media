@@ -112,8 +112,11 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  * @return array|false
  */
 function get_crop( $attachment_id, $size ) {
-	// Check it's a size that can actually have crop data.
-	if ( in_array( $size, [ 'full', 'full-orig' ], true ) ) {
+	// Fetch all registered image sizes.
+	$sizes = get_image_sizes();
+
+	// Check it's that passed in size exists.
+	if ( ! isset( $sizes[ $size ] ) ) {
 		return false;
 	}
 
@@ -122,7 +125,7 @@ function get_crop( $attachment_id, $size ) {
 	// Infer crop from focal point if available.
 	if ( empty( $crop ) ) {
 		$meta_data = wp_get_attachment_metadata( $attachment_id );
-		$size      = get_image_sizes()[ $size ];
+		$size      = $sizes[ $size ];
 
 		$focal_point = get_post_meta( $attachment_id, '_focal_point', true ) ?: [];
 		$focal_point = array_map( 'absint', $focal_point );
