@@ -108,7 +108,7 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  * Get crop data for a given image and size.
  *
  * @param int $attachment_id
- * @param string $size The image
+ * @param string $size
  * @return array|false
  */
 function get_crop( $attachment_id, $size ) {
