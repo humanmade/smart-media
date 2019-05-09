@@ -108,10 +108,15 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  * Get crop data for a given image and size.
  *
  * @param int $attachment_id
- * @param string $size
+ * @param string $size The image
  * @return array|false
  */
 function get_crop( $attachment_id, $size ) {
+	// Check it's a size that can actually have crop data.
+	if ( in_array( $size, [ 'full', 'full-orig' ], true ) ) {
+		return false;
+	}
+
 	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true ) ?: [];
 
 	// Infer crop from focal point if available.
@@ -179,6 +184,13 @@ function attachment_js( $response, $attachment ) {
 
 	$meta         = wp_get_attachment_metadata( $attachment->ID );
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
+
+	// Ensure width and height are set.
+	if ( ! isset( $meta['width'] ) || ! isset( $meta['height'] ) ) {
+		$dims = getimagesize( get_attached_file( $attachment->ID ) );
+		$meta['width'] = $dims[0] ?? 1;
+		$meta['height'] = $dims[1] ?? 1;
+	}
 
 	$big   = max( $meta['width'], $meta['height'] );
 	$sizer = $big > 400 ? 400 / $big : 1;
@@ -376,7 +388,7 @@ function get_image_sizes() {
 				'width'       => $width,
 				'height'      => $height,
 				'crop'        => $crop,
-				'orientation' => $width > $height ? 'landscape' : 'portrait',
+				'orientation' => $width >= $height ? 'landscape' : 'portrait',
 			];
 		}, $sizes
 	);
