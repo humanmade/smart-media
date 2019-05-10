@@ -188,11 +188,10 @@ function attachment_js( $response, $attachment ) {
 	$meta         = wp_get_attachment_metadata( $attachment->ID );
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
 
-	// Ensure width and height are set.
+	// Check width and height are set, in rare cases it can fail.
 	if ( ! isset( $meta['width'] ) || ! isset( $meta['height'] ) ) {
-		$dims = getimagesize( get_attached_file( $attachment->ID ) );
-		$meta['width'] = $dims[0] ?? 1;
-		$meta['height'] = $dims[1] ?? 1;
+		trigger_error( sprintf( 'Image metadata generation failed for image ID "%d", this may require manual resolution.', $attachment->ID ), E_USER_WARNING );
+		return $response;
 	}
 
 	$big   = max( $meta['width'], $meta['height'] );
