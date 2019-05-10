@@ -112,12 +112,20 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  * @return array|false
  */
 function get_crop( $attachment_id, $size ) {
+	// Fetch all registered image sizes.
+	$sizes = get_image_sizes();
+
+	// Check it's that passed in size exists.
+	if ( ! isset( $sizes[ $size ] ) ) {
+		return false;
+	}
+
 	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true ) ?: [];
 
 	// Infer crop from focal point if available.
 	if ( empty( $crop ) ) {
 		$meta_data = wp_get_attachment_metadata( $attachment_id );
-		$size      = get_image_sizes()[ $size ];
+		$size      = $sizes[ $size ];
 
 		$focal_point = get_post_meta( $attachment_id, '_focal_point', true ) ?: [];
 		$focal_point = array_map( 'absint', $focal_point );
@@ -179,6 +187,12 @@ function attachment_js( $response, $attachment ) {
 
 	$meta         = wp_get_attachment_metadata( $attachment->ID );
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
+
+	// Check width and height are set, in rare cases it can fail.
+	if ( ! isset( $meta['width'] ) || ! isset( $meta['height'] ) ) {
+		trigger_error( sprintf( 'Image metadata generation failed for image ID "%d", this may require manual resolution.', $attachment->ID ), E_USER_WARNING );
+		return $response;
+	}
 
 	$big   = max( $meta['width'], $meta['height'] );
 	$sizer = $big > 400 ? 400 / $big : 1;
@@ -376,7 +390,7 @@ function get_image_sizes() {
 				'width'       => $width,
 				'height'      => $height,
 				'crop'        => $crop,
-				'orientation' => $width > $height ? 'landscape' : 'portrait',
+				'orientation' => $width >= $height ? 'landscape' : 'portrait',
 			];
 		}, $sizes
 	);
