@@ -1,6 +1,8 @@
 Changelog
 =========
 
+## v0.1.13
+
 - Bug: Fix warnings when trying to get crop data for special case image sizes #5
 
 ## v0.1.12
