@@ -2,6 +2,7 @@ import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditSizes from './image-edit-sizes';
 import ImageEditor from './image-editor';
+import ImagePreview from './image-preview';
 
 /**
  * The main image editor content area.
@@ -21,25 +22,35 @@ const ImageEditView = Media.View.extend( {
 		this.onUpdate();
 	},
 	onUpdate() {
+		const views = [];
+
 		// If the attachment info hasn't loaded yet show a spinner.
 		if ( this.model.get( 'uploading' ) || ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) ) {
-			this.views.set( [
-				new Media.view.Spinner(),
-			] );
+			views.push( new Media.view.Spinner() );
 		} else {
-			this.views.set( [
-				new ImageEditSizes( {
-					controller: this.controller,
-					model: this.model,
-					priority: 10,
-				} ),
-				new ImageEditor( {
+			views.push( new ImageEditSizes( {
+				controller: this.controller,
+				model: this.model,
+				priority: 10,
+			} ) );
+
+			// Ensure this attachment is editable.
+			if ( this.model.get( 'mime' ).match( /image\/(gif|jpe?g|png)/ ) ) {
+				views.push( new ImageEditor( {
 					controller: this.controller,
 					model: this.model,
 					priority: 50,
-				} ),
-			] );
+				} ) );
+			} else {
+				views.push( new ImagePreview( {
+					controller: this.controller,
+					model: this.model,
+					priority: 50,
+				} ) );
+			}
 		}
+
+		this.views.set( views );
 	},
 } );
 

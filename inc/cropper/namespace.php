@@ -185,6 +185,10 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
+	if ( $response['mime'] === 'image/svg+xml' ) {
+		return $response;
+	}
+
 	$meta         = wp_get_attachment_metadata( $attachment->ID );
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
 
