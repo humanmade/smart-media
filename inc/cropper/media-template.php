@@ -45,7 +45,7 @@
 	<div class="attachment-info">
 		<span class="settings-save-status">
 			<span class="spinner"></span>
-			<span class="saved"><?php esc_html_e('Saved.'); ?></span>
+			<span class="saved"><?php esc_html_e( 'Saved.' ); ?></span>
 		</span>
 		<div class="details">
 			<div class="filename"><strong><?php _e( 'File name:' ); ?></strong> {{ data.filename }}</div>
@@ -167,19 +167,21 @@
 				<img src="{{ data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
-		<# _.each( data.model.get('sizes'), function ( props, size ) { #>
-			<# if ( size && size !== 'full' && size !== 'full-orig' ) { #>
-			<li>
-				<button type="button" data-size="{{ size }}" class="{{ data.model.get( 'size' ) === size ? 'current' : '' }}">
-					<h3>
-						{{ size.replace( /[_-]+/g,' ' ) }}
-						<small>{{ props.width }} x {{ props.height }}</small>
-					</h3>
-					<img src="{{ props.url }}" height="80" alt="{{ size }}" draggable="false" />
-				</button>
-			</li>
-			<# } #>
-		<# } ); #>
+		<# if ( data.model.get( 'mime' ).match( /image\/(jpe?g|png|gif)/ ) ) { #>
+			<# _.each( data.model.get( 'sizes' ), function ( props, size ) { #>
+				<# if ( size && size !== 'full' && size !== 'full-orig' ) { #>
+				<li>
+					<button type="button" data-size="{{ size }}" class="{{ data.model.get( 'size' ) === size ? 'current' : '' }}">
+						<h3>
+							{{ size.replace( /[_-]+/g,' ' ) }}
+							<small>{{ props.width }} x {{ props.height }}</small>
+						</h3>
+						<img src="{{ props.url }}" height="80" alt="{{ size }}" draggable="false" />
+					</button>
+				</li>
+				<# } #>
+			<# } ); #>
+		<# } #>
 	</ul>
 </script>
 
@@ -255,5 +257,20 @@
 				<input type="button" onclick="imageEdit.action( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', 'restore' )" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
 			<# } #>
 		<# } #>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-hm-thumbnail-preview">
+	<div class="hm-thumbnail-editor__image-wrap">
+		<div class="hm-thumbnail-editor__image">
+			<img
+				class="image-preview"
+				src="{{ data.model.get( 'url' ) }}"
+				width="{{ data.model.get( 'width' ) }}"
+				height="{{ data.model.get( 'height' ) }}"
+				alt=""
+				draggable="false"
+			/>
+		</div>
 	</div>
 </script>
