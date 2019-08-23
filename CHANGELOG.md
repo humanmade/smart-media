@@ -1,6 +1,8 @@
 Changelog
 =========
 
+## v0.1.14
+
 - Bug: Fix SVG compatibility #15
 
 ## v0.1.13
