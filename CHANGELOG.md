@@ -1,6 +1,8 @@
 Changelog
 =========
 
+- Bug: Allow cropper to update crops for sizes that contain special characters #17
+
 ## v0.1.14
 
 - Bug: Fix SVG compatibility #15
