@@ -260,7 +260,7 @@ function ajax_save_crop() {
 	}
 
 	$crop = map_deep( wp_unslash( $_POST['crop'] ), 'absint' );
-	$name = sanitize_key( wp_unslash( $_POST['size'] ) );
+	$name = sanitize_text_field( wp_unslash( $_POST['size'] ) );
 
 	if ( ! in_array( $name, array_keys( get_image_sizes() ), true ) ) {
 		wp_send_json_error( __( 'Invalid thumbnail size received', 'hm-smart-media' ) );
