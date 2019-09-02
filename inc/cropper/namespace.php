@@ -5,6 +5,8 @@
 
 namespace HM\Media\Cropper;
 
+use Tachyon;
+
 use function HM\Media\get_asset_url;
 
 /**
@@ -34,13 +36,31 @@ function setup() {
 	 */
 	add_filter( 'tachyon_pre_args', __NAMESPACE__ . '\\tachyon_args' );
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
+	if ( class_exists( 'Tachyon' ) ) {
+		remove_filter( 'rest_request_before_callbacks', [ Tachyon::instance(), 'should_rest_image_downsize' ], 10, 3 );
+	}
 
 	// Disable intermediate thumbnail file generation.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\prevent_thumbnail_generation' );
 
+	// Fake the image meta data.
+	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
+
 	// Add crop data.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
 	add_filter( 'tachyon_post_image_args', __NAMESPACE__ . '\\image_downsize', 10, 2 );
+
+	/*
+	 * Replace WordPress Core's responsive image filter with our own as
+	 * the Core one doesn't work with Tachyon due to the sizing details
+	 * being stored in the query string.
+	 */
+	remove_filter( 'the_content', 'wp_make_content_images_responsive' );
+	// Runs very late to ensure images have passed through Tachyon first.
+	add_filter( 'the_content', __NAMESPACE__ . '\\make_content_images_responsive', 999999 );
+
+	// Calculate srcset based on zoom modifiers.
+	add_filter( 'wp_calculate_image_srcset', __NAMESPACE__ . '\\image_srcset', 10, 5 );
 }
 
 /**
@@ -220,8 +240,7 @@ function attachment_js( $response, $attachment ) {
 
 	// Add base Tachyon URL.
 	if ( function_exists( 'tachyon_url' ) ) {
-		$response['original_url'] = $response['url'];
-		$response['url']          = tachyon_url( $response['url'] );
+		$response['tachyon_url'] = tachyon_url( $response['url'] );
 	}
 
 	// Fill intermediate sizes array.
@@ -487,4 +506,371 @@ function prevent_thumbnail_generation( $sizes ) {
 	}
 
 	return [];
+}
+
+/**
+ * Fake attachment meta data to include all image sizes.
+ *
+ * This attempts to fix two issues:
+ *  - "new" image sizes are not included in meta data.
+ *  - when using Tachyon in admin and disabling resizing,
+ *    NO image sizes are included in the meta data.
+ *
+ * @TODO Work out how to name files if crop on upload is reintroduced.
+ *
+ * @param $data          array The original attachment meta data.
+ * @param $attachment_id int   The attachment ID.
+ *
+ * @return array The modified attachment data including "new" image sizes.
+ */
+function filter_attachment_meta_data( $data, $attachment_id ) {
+	// Save time, only calculate once.
+	static $cache = [];
+
+	if ( isset( $cache[ $attachment_id ] ) ) {
+		return $cache[ $attachment_id ];
+	}
+
+	// Only modify if valid format and for images.
+	if ( ! is_array( $data ) || ! wp_attachment_is_image( $attachment_id ) ) {
+		return $data;
+	}
+
+	$data = massage_meta_data_for_orientation( $data );
+
+	// Full size image info.
+	$image_sizes = get_image_sizes();
+	$mime_type = get_post_mime_type( $attachment_id );
+	$filename = pathinfo( $data['file'], PATHINFO_FILENAME );
+	$ext = pathinfo( $data['file'], PATHINFO_EXTENSION );
+	$orig_w = $data['width'];
+	$orig_h = $data['height'];
+
+	foreach ( $image_sizes as $size => $crop ) {
+		if ( isset( $data['sizes'][ $size ] ) ) {
+			// Meta data is set.
+			continue;
+		}
+
+		if ( 'full' === $size ) {
+			// Full is a special case.
+			continue;
+		}
+
+		/*
+		 * $new_dims = [
+		 *    0 => 0
+		 *    1 => 0
+		 *    2 => // Crop start X axis
+		 *    3 => // Crop start Y axis
+		 *    4 => // New width
+		 *    5 => // New height
+		 *    6 => // Crop width on source image
+		 *    7 => // Crop height on source image
+		 * ];
+		*/
+		$new_dims = image_resize_dimensions( $orig_w, $orig_h, $crop['width'], $crop['height'], $crop['crop'] );
+
+		if ( ! $new_dims ) {
+			continue;
+		}
+
+		$w = (int) $new_dims[4];
+		$h = (int) $new_dims[5];
+
+		// Set crop hash if source crop isn't 0,0,orig_width,orig_height
+		$crop_details = "{$orig_w},{$orig_h},{$new_dims[2]},{$new_dims[3]},{$new_dims[6]},{$new_dims[7]}";
+		$crop_hash = '';
+
+		if ( $crop_details !== "{$orig_w},{$orig_h},0,0,{$orig_w},{$orig_h}" ) {
+			/*
+			 * NOTE: Custom file name data.
+			 *
+			 * The crop hash is used to help determine the correct crop to use for identically
+			 * sized images.
+			 */
+			$crop_hash = '-c' . substr( strtolower( sha1( $crop_details ) ), 0, 8 );
+		}
+
+		// Add meta data with fake WP style file name.
+		$data['sizes'][ $size ] = [
+			'width' => $w,
+			'height' => $h,
+			'file' => "{$filename}{$crop_hash}-{$w}x{$h}.{$ext}",
+			'mime-type' => $mime_type,
+		];
+	}
+
+	$cache[ $attachment_id ] = $data;
+	return $data;
+}
+
+/**
+ * Swap width and height if required.
+ *
+ * The Tachyon service/sharp library will automatically fix
+ * the orientation but as a result, the width and height will
+ * be the reverse of that calculated on upload.
+ *
+ * This swaps the width and height if needed but it does not
+ * fix the image on upload as we have Tachy for that.
+ *
+ * @param array $meta_data Meta data stored in the database.
+ *
+ * @return array Meta data with correct width and height.
+ */
+function massage_meta_data_for_orientation( array $meta_data ) {
+	if ( empty( $meta_data['image_meta']['orientation'] ) ) {
+		// No orientation data to fix.
+		return $meta_data;
+	}
+
+	$fix_width_height = false;
+
+	switch ( $meta_data['image_meta']['orientation'] ) {
+		case 5:
+		case 6:
+		case 7:
+		case 8:
+		case 9:
+			$fix_width_height = true;
+			break;
+	}
+
+	if ( ! $fix_width_height ) {
+		return $meta_data;
+	}
+
+	$width = $meta_data['height'];
+	$meta_data['height'] = $meta_data['width'];
+	$meta_data['width'] = $width;
+	return $meta_data;
+}
+
+/**
+ * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
+ *
+ * @param string $content The raw post content to be filtered.
+ *
+ * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
+ */
+function make_content_images_responsive( string $content ) : string {
+	$images = \Tachyon::parse_images_from_html( $content );
+	if ( empty( $images ) ) {
+		// No images, leave early.
+		return $content;
+	}
+
+	// This bit is from Core.
+	$selected_images = [];
+	$attachment_ids = [];
+
+	foreach ( $images['img_url'] as $key => $img_url ) {
+		if ( strpos( $img_url, TACHYON_URL ) !== 0 ) {
+			// It's not a Tachyon URL.
+			continue;
+		}
+
+		$image_data = [
+			'full_tag' => $images[0][ $key ],
+			'link_url' => $images['link_url'][ $key ],
+			'img_tag' => $images['img_tag'][ $key ],
+			'img_url' => $images['img_url'][ $key ],
+		];
+
+		$image = $image_data['img_tag'];
+
+		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
+			$attachment_id = $class_id[1];
+			$image_data['id'] = $attachment_id;
+			/*
+			 * If exactly the same image tag is used more than once, overwrite it.
+			 * All identical tags will be replaced later with 'str_replace()'.
+			 */
+			$selected_images[ $image ] = $image_data;
+			// Overwrite the ID when the same image is included more than once.
+			$attachment_ids[ $attachment_id ] = true;
+		}
+	}
+
+	if ( empty( $attachment_ids ) ) {
+		// No WP attachments, nothing further to do.
+		return $content;
+	}
+
+	/*
+	 * Warm the object cache with post and meta information for all found
+	 * images to avoid making individual database calls.
+	 */
+	_prime_post_caches( array_keys( $attachment_ids ), false, true );
+
+	foreach ( $selected_images as $image => $image_data ) {
+		$attachment_id = $image_data['id'];
+		$image_meta = wp_get_attachment_metadata( $attachment_id );
+		$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
+	}
+
+	return $content;
+}
+/**
+ * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
+ *
+ * @TODO Deal with edit hashes by getting the previous version of the meta
+ *       data if required for calculating the srcset using the meta value of
+ *       `_wp_attachment_backup_sizes`. To get the edit hash, refer to
+ *       wp/wp-includes/media.php:1380
+ *
+ * @param array $image_data    The full data extracted via `make_content_images_responsive`.
+ * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
+ * @param int   $attachment_id Image attachment ID.
+ *
+ * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
+ */
+function add_srcset_and_sizes( array $image_data, array $image_meta, int $attachment_id ) : string {
+	$image = $image_data['img_tag'];
+	$image_src = $image_data['img_url'];
+
+	// Bail early if an image has been inserted and later edited.
+	list( $image_path ) = explode( '?', $image_src );
+	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
+		strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
+		return $image;
+	}
+
+	$width = false;
+	$height = false;
+
+	parse_str( html_entity_decode( wp_parse_url( $image_data['img_url'], PHP_URL_QUERY ) ), $tachyon_args );
+
+	// Need to work back width and height from various Tachyon options.
+	if ( isset( $tachyon_args['resize'] ) ) {
+		// Image is cropped.
+		list( $width, $height ) = explode( ',', $tachyon_args['resize'] );
+	} elseif ( isset( $tachyon_args['fit'] ) ) {
+		// Image is uncropped.
+		list( $width, $height ) = explode( ',', $tachyon_args['fit'] );
+		if ( empty( $height ) ) {
+			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width );
+		}
+	} else {
+		if ( isset( $tachyon_args['w'] ) ) {
+			$width = (int) $tachyon_args['w'];
+		}
+		if ( isset( $tachyon_args['h'] ) ) {
+			$height = (int) $tachyon_args['h'];
+		}
+		if ( $width && ! $height ) {
+			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width );
+		}
+		if ( ! $width && $height ) {
+			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], 0, $height );
+		}
+	}
+
+	// Still stumped?
+	if ( ! $width || ! $height ) {
+		return $image;
+	}
+
+	$size_array = [ $width, $height ];
+	$srcset = wp_calculate_image_srcset( $size_array, $image_src, $image_meta, $attachment_id );
+
+	if ( $srcset ) {
+		// Check if there is already a 'sizes' attribute.
+		$sizes = strpos( $image, ' sizes=' );
+		if ( ! $sizes ) {
+			$sizes = wp_calculate_image_sizes( $size_array, $image_src, $image_meta, $attachment_id );
+		}
+	}
+
+	if ( $srcset && $sizes ) {
+		// Format the 'srcset' and 'sizes' string and escape attributes.
+		$attr = sprintf( ' srcset="%s"', esc_attr( $srcset ) );
+		if ( is_string( $sizes ) ) {
+			$attr .= sprintf( ' sizes="%s"', esc_attr( $sizes ) );
+		}
+		// Add 'srcset' and 'sizes' attributes to the image markup.
+		$image = preg_replace( '/<img ([^>]+?)[\/ ]*>/', '<img $1' . $attr . ' />', $image );
+	}
+
+	return $image;
+}
+
+/**
+ * Return a list of modifiers for calculating image srcset and sizes from.
+ *
+ * @return array
+ */
+function get_image_size_modifiers( ?int $attachment_id = null ) : array {
+	/**
+	 * Filters the default image size modifiers. By default
+	 * the srcset will contain a 2x, 1.5x, 0.5x and 0.25x version of the image.
+	 *
+	 * @param array $modifiers The zoom values for the srcset.
+	 * @param int? $attachment_id The attachment ID or null.
+	 */
+	return apply_filters( 'hm.smart-media.image-size-modifiers', [ 2, 1.5, 0.5, 0.25 ], $attachment_id );
+}
+
+/**
+ * Update the sources array to return tachyon URLs that respect
+ * requested image aspect ratio and crop data.
+ *
+ * @param array   $sources       Array of source URLs and widths to generate the srcset attribute from.
+ * @param array   $size_array    Width and height of the original image.
+ * @param string  $image_src     The requested image URL.
+ * @param array   $image_meta    The image meta data array.
+ * @param integer $attachment_id The image ID.
+ * @return array
+ */
+function image_srcset( array $sources, array $size_array, string $image_src, array $image_meta, int $attachment_id ) : array {
+	$width = absint( $size_array[0] );
+	$height = absint( $size_array[1] );
+
+	// Ensure this is a tachyon image, not always the case when parsing from post content.
+	if ( strpos( $image_src, TACHYON_URL ) === false ) {
+		$size = 'full';
+
+		// Determine size name to get ensure any crop data is attached.
+		foreach ( $image_meta['sizes'] as $size_name => $data ) {
+			if ( absint( $data['width'] ) === $width && absint( $data['height'] ) === $height ) {
+				$size = $size_name;
+				break;
+			}
+		}
+
+		// Get the tachyon URL for this image size.
+		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
+	}
+
+	// Check we have resize or fit parameters now.
+	if ( ! preg_match( '#(resize|fit)=\d+,\d+#', $image_src ) ) {
+		return $sources;
+	}
+
+	// Multipliers for output srcset.
+	$modifiers = get_image_size_modifiers( $attachment_id );
+
+	// Replace sources array.
+	$sources = [];
+
+	foreach ( $modifiers as $modifier ) {
+		$target_width = round( $width * $modifier );
+
+		// Apply zoom to the image to get automatic quality adjustment.
+		$zoomed_image_url = add_query_arg( [
+			'fit' => false,
+			'resize' => "{$width},{$height}",
+			'zoom' => $modifier,
+		], $image_src );
+
+		// Append the new target width to the sources array.
+		$sources[ $target_width ] = [
+			'url' => $zoomed_image_url,
+			'descriptor' => 'w',
+			'value' => $target_width,
+		];
+	}
+
+	return $sources;
 }
