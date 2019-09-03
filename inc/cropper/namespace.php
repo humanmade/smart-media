@@ -527,7 +527,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 	// Save time, only calculate once.
 	static $cache = [];
 
-	if ( isset( $cache[ $attachment_id ] ) ) {
+	if ( empty( $cache[ $attachment_id ] ) ) {
 		return $cache[ $attachment_id ];
 	}
 
@@ -594,6 +594,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 
 		// Add meta data with fake WP style file name.
 		$data['sizes'][ $size ] = [
+			'_tachyon_dynamic' => true,
 			'width' => $w,
 			'height' => $h,
 			'file' => "{$filename}{$crop_hash}-{$w}x{$h}.{$ext}",
@@ -644,6 +645,7 @@ function massage_meta_data_for_orientation( array $meta_data ) {
 	$width = $meta_data['height'];
 	$meta_data['height'] = $meta_data['width'];
 	$meta_data['width'] = $width;
+	unset( $meta_data['image_meta']['orientation'] );
 	return $meta_data;
 }
 
