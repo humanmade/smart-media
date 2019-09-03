@@ -47,7 +47,7 @@ function setup() {
 	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
 
 	// Prevent fake image meta sizes beinng saved to the database.
-	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_metadata' );
+	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_meta_data' );
 
 	// Add crop data.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
@@ -530,7 +530,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 	// Save time, only calculate once.
 	static $cache = [];
 
-	if ( empty( $cache[ $attachment_id ] ) ) {
+	if ( ! empty( $cache[ $attachment_id ] ) ) {
 		return $cache[ $attachment_id ];
 	}
 
@@ -616,7 +616,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
  * @param array $data The image metadata array.
  * @return array
  */
-function filter_update_attachment_metadata( array $data ) : array {
+function filter_update_attachment_meta_data( array $data ) : array {
 	foreach ( $data['sizes'] as $size => $size_data ) {
 		if ( isset( $size_data['_tachyon_dynamic'] ) ) {
 			unset( $data['sizes'][ $size ] );
@@ -849,25 +849,8 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	$width = absint( $size_array[0] );
 	$height = absint( $size_array[1] );
 
-	// Ensure this is a tachyon image, not always the case when parsing from post content.
 	if ( strpos( $image_src, TACHYON_URL ) === false ) {
-		$size = 'full';
-
-		// Determine size name to get ensure any crop data is attached.
-		foreach ( $image_meta['sizes'] as $size_name => $data ) {
-			if ( absint( $data['width'] ) === $width && absint( $data['height'] ) === $height ) {
-				$size = $size_name;
-				break;
-			}
-		}
-
-		// Get the tachyon URL for this image size.
-		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
-	}
-
-	// Check we have resize or fit parameters now.
-	if ( ! preg_match( '#(resize|fit)=\d+,\d+#', $image_src ) ) {
-		return $sources;
+		$image_src = tachyon_url( $image_src );
 	}
 
 	// Multipliers for output srcset.
@@ -882,6 +865,8 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 		// Apply zoom to the image to get automatic quality adjustment.
 		$zoomed_image_url = add_query_arg( [
 			'fit' => false,
+			'w' => false,
+			'h' => false,
 			'resize' => "{$width},{$height}",
 			'zoom' => $modifier,
 		], $image_src );
