@@ -1,3 +1,4 @@
+import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditView from './views/image-edit';
@@ -85,7 +86,7 @@ Media.events.on( 'frame:select:init', frame => {
   // Create new editing state.
   const editState = frame.states.add( {
     id: 'edit',
-    title: 'Edit image',
+    title: __( 'Edit image', 'hm-smart-media' ),
     router: false,
     menu: false,
     uploader: false,
@@ -129,7 +130,7 @@ Media.events.on( 'frame:select:init', frame => {
       event: 'select',
       items: {
         change: {
-          text: 'Change image',
+          text: __( 'Change image', 'hm-smart-media' ),
           click() {
             frame.setState( frame.lastState() );
           },
@@ -138,7 +139,7 @@ Media.events.on( 'frame:select:init', frame => {
         },
         apply: {
           style: 'primary',
-          text: 'Select',
+          text: __( 'Select', 'hm-smart-media' ),
           click: () => {
             const { close, event, reset, state } = frame.options.mutableButton || frame.options.button || {};
 

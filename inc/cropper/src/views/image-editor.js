@@ -54,13 +54,19 @@ const ImageEditor = Media.View.extend( {
 		this.update();
 	},
 	update() {
+		wp && wp.data && wp.data.dispatch( 'core' ).saveMedia( {
+			id: this.model.get( 'id' ),
+		} );
 		this.model.fetch( {
 			success: () => this.loadEditor(),
 			error: () => {},
 		} );
 	},
+	applyRatio() {
+		const ratio = this.model.get( 'width' ) / Math.min( 1000, this.model.get( 'width' ) );
+		return [ ...arguments ].map( dim => Math.round( dim * ratio ) );
+	},
 	reset() {
-		const $image     = $( 'img[id^="image-preview-"]' );
 		const sizeName   = this.model.get( 'size' );
 		const sizes      = this.model.get( 'sizes' );
 		const focalPoint = this.model.get( 'focalPoint' );
@@ -86,8 +92,9 @@ const ImageEditor = Media.View.extend( {
 					height: cropHeight,
 				} );
 			} else {
+				const image = $( 'img[id^="image-preview-"]' ).get( 0 );
 				smartcrop
-					.crop( $image.get( 0 ), {
+					.crop( image, {
 						width: size.width,
 						height: size.height,
 					} )

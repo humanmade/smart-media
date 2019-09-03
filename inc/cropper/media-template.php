@@ -164,7 +164,7 @@
 					<?php esc_html_e( 'Original' ); ?>
 					<small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small>
 				</h3>
-				<img src="{{ data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
+				<img src="{{ data.model.get( 'tachyon_url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
 		<# if ( data.model.get( 'mime' ).match( /image\/(jpe?g|png|gif)/ ) ) { #>
@@ -230,7 +230,7 @@
 			<button type="button" class="button imgedit-crop button-apply-changes" disabled><span class="screen-reader-text"><?php esc_html_e( 'Apply changes', 'hm-smart-media' ); ?></span></button>
 			<button type="button" class="button imgedit-undo button-reset" disabled><span class="screen-reader-text"><?php esc_html_e( 'Reset', 'hm-smart-media' ); ?></span></button>
 			<# if ( data.model.get( 'size' ) && data.model.get( 'sizes' )[ data.model.get( 'size' ) ].hasOwnProperty( 'cropData' ) && ! data.model.get( 'sizes' )[ data.model.get( 'size' ) ].cropData.hasOwnProperty( 'x' ) ) { #>
-				<p class="note-auto-crop"><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.' ); ?></p>
+				<p class="note-auto-crop"><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.', 'hm-smart-media' ); ?></p>
 			<# } #>
 		</div>
 	<# } #>

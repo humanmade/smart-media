@@ -6,6 +6,9 @@
 namespace HM\Media\Cropper;
 
 use Tachyon;
+use WP_Post;
+use WP_REST_Request;
+use WP_REST_Response;
 
 use function HM\Media\get_asset_url;
 
@@ -15,6 +18,9 @@ use function HM\Media\get_asset_url;
 function setup() {
 	// Add initial crop data for js attachment models.
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 200, 3 );
+
+	// Add tachyon URL to REST responses.
+	add_filter( 'rest_prepare_attachment', __NAMESPACE__ . '\\rest_api_fields', 10, 3 );
 
 	// Add scripts for cropper whenever media modal is loaded.
 	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 1 );
@@ -40,18 +46,21 @@ function setup() {
 		remove_filter( 'rest_request_before_callbacks', [ Tachyon::instance(), 'should_rest_image_downsize' ], 10, 3 );
 	}
 
+	// Ignore $content_width for display context.
+	add_filter( 'editor_max_image_size', __NAMESPACE__ . '\\editor_max_image_size', 10, 3 );
+
 	// Disable intermediate thumbnail file generation.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\prevent_thumbnail_generation' );
 
 	// Fake the image meta data.
-	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
+	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 20, 2 );
 
 	// Prevent fake image meta sizes beinng saved to the database.
 	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_meta_data' );
 
 	// Add crop data.
-	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
-	add_filter( 'tachyon_post_image_args', __NAMESPACE__ . '\\image_downsize', 10, 2 );
+	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 20, 2 );
+	add_filter( 'tachyon_post_image_args', __NAMESPACE__ . '\\image_downsize', 20, 2 );
 
 	/*
 	 * Replace WordPress Core's responsive image filter with our own as
@@ -104,6 +113,19 @@ function enqueue_scripts( $hook = false ) {
 			'FocalPoint' => $use_focal_point,
 		] ) )
 	);
+}
+
+/**
+ * Add the base tachyon URL to REST API responses.
+ *
+ * @param WP_REST_Response $response
+ * @return WP_REST_Response
+ */
+function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
+	$data = $response->get_data();
+	$data['tachyon_url'] = tachyon_url( $data['source_url'] );
+	$response->set_data( $data );
+	return $response;
 }
 
 /**
@@ -846,11 +868,18 @@ function get_image_size_modifiers( ?int $attachment_id = null ) : array {
  * @return array
  */
 function image_srcset( array $sources, array $size_array, string $image_src, array $image_meta, int $attachment_id ) : array {
-	$width = absint( $size_array[0] );
-	$height = absint( $size_array[1] );
 
+	list( $width, $height ) = array_map( 'absint', $size_array );
+
+	// Ensure this is a tachyon image, not always the case when parsing from post content.
 	if ( strpos( $image_src, TACHYON_URL ) === false ) {
-		$image_src = tachyon_url( $image_src );
+		// If the aspect ratio requested matches a custom crop size, pull that
+		// crop (in case there's a user custom crop). Otherwise just use the
+		// given dimensions.
+		$size = nearest_defined_crop_size( $width / $height ) ?: [ $width, $height ];
+
+		// Get the tachyon URL for this image size.
+		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
 	}
 
 	// Multipliers for output srcset.
@@ -880,4 +909,69 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	}
 
 	return $sources;
+}
+
+/**
+ * Returns the closest defined crop size to a given ratio.
+ *
+ * If there is a theme crop defined with proportians similar enough to the
+ * source image,returns the name of that crop size. Otherwise, returns "full".
+ *
+ * @param float $ratio Width to height ratio of an image.
+ * @return string|null Closest defined image size to that ratio; null if none match.
+ */
+function nearest_defined_crop_size( $ratio ) {
+	/*
+	 * Compare each of the theme crops to the ratio in question. Returns a
+	 * sort-of difference where 0 is identical. Not mathematically meaningful
+	 * at scale, but good enough for checking if something is within 2%.
+	 */
+	$difference_from_theme_crop_ratios = array_map(
+		/**
+		 * Get the difference between the aspect ratio of a given crop size and an expected ratio.
+		 *
+		 * @param [] $crop_data Image size definition for a custom crop size.
+		 * @return float Difference between expected and actual aspect ratios: 0 = identical, 1.0 = +-100%.
+		 */
+		function( $crop_data ) use ( $ratio ) {
+			$crop_ratio = ( $crop_data['width'] / $crop_data['height'] );
+			return abs( $crop_ratio / $ratio - 1 );
+		},
+		// ... of all the custom image sizes defined.
+		wp_get_additional_image_sizes()
+	);
+	// Sort the differences from most to least similar.
+	asort( $difference_from_theme_crop_ratios, SORT_NUMERIC );
+	/*
+	 * If the most similar crop from the defined image sizes is within 2% of
+	 * the requested dimensions, use it. Otherwise just treat this as an
+	 * uncropped image and use the full size image.
+	 */
+	return ( current( $difference_from_theme_crop_ratios ) < 0.02 ) ?
+		key( $difference_from_theme_crop_ratios ) : null;
+}
+
+/**
+ * Ignore the $content_width global in the display context.
+ *
+ * @param array $size_array
+ * @param string $size
+ * @param string $context
+ * @return array
+ */
+function editor_max_image_size( array $size_array, string $size, string $context ) : array {
+	if ( $context !== 'display' ) {
+		return $size_array;
+	}
+
+	$sizes = get_image_sizes();
+
+	if ( ! isset( $sizes[ $size ] ) ) {
+		return $size_array;
+	}
+
+	return [
+		$sizes[ $size ]['width'],
+		$sizes[ $size ]['height'],
+	];
 }
