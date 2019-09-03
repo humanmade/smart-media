@@ -46,6 +46,9 @@ function setup() {
 	// Fake the image meta data.
 	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 10, 2 );
 
+	// Prevent fake image meta sizes beinng saved to the database.
+	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_metadata' );
+
 	// Add crop data.
 	add_filter( 'tachyon_image_downsize_string', __NAMESPACE__ . '\\image_downsize', 10, 2 );
 	add_filter( 'tachyon_post_image_args', __NAMESPACE__ . '\\image_downsize', 10, 2 );
@@ -607,6 +610,22 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 }
 
 /**
+ * When saving the attachment metadata remove the dynamic sizes added
+ * by the above filter.
+ *
+ * @param array $data The image metadata array.
+ * @return array
+ */
+function filter_update_attachment_metadata( array $data ) : array {
+	foreach ( $data['sizes'] as $size => $size_data ) {
+		if ( isset( $size_data['_tachyon_dynamic'] ) ) {
+			unset( $data['sizes'][ $size ] );
+		}
+	}
+	return $data;
+}
+
+/**
  * Swap width and height if required.
  *
  * The Tachyon service/sharp library will automatically fix
@@ -714,6 +733,7 @@ function make_content_images_responsive( string $content ) : string {
 
 	return $content;
 }
+
 /**
  * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
  *
