@@ -7,7 +7,6 @@ namespace HM\Media\Cropper;
 
 use Tachyon;
 use WP_Post;
-use WP_REST_Request;
 use WP_REST_Response;
 
 use function HM\Media\get_asset_url;
@@ -123,7 +122,17 @@ function enqueue_scripts( $hook = false ) {
  */
 function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	$data = $response->get_data();
-	$data['tachyon_url'] = tachyon_url( $data['source_url'] );
+	$data['original_url'] = $data['source_url'];
+	$data['source_url'] = tachyon_url( $data['source_url'] );
+
+	$focal_point = get_post_meta( $data['id'], '_focal_point', true ) ?: [];
+	$focal_point = array_map( 'absint', $focal_point );
+	$data['focal_point'] = (object) $focal_point;
+
+	foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
+		$data['media_details']['sizes'][ $size ]['crop'] = (object)( get_crop( $data['id'], $size ) ?? [] );
+	}
+
 	$response->set_data( $data );
 	return $response;
 }
@@ -135,7 +144,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
  * @param array $downsize_args
  * @return array
  */
-function image_downsize( $tachyon_args, $downsize_args ) {
+function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 	if ( ! isset( $downsize_args['attachment_id'] ) || ! isset( $downsize_args['size'] ) ) {
 		return $tachyon_args;
 	}
@@ -143,7 +152,7 @@ function image_downsize( $tachyon_args, $downsize_args ) {
 	$crop = get_crop( $downsize_args['attachment_id'], $downsize_args['size'] );
 
 	if ( $crop ) {
-		$tachyon_args['crop'] = $crop;
+		$tachyon_args['crop'] = sprintf( '%dpx,%dpx,%dpx,%dpx', $crop['x'], $crop['y'], $crop['width'], $crop['height'] );
 	}
 
 	return $tachyon_args;
@@ -154,15 +163,15 @@ function image_downsize( $tachyon_args, $downsize_args ) {
  *
  * @param int $attachment_id
  * @param string $size
- * @return array|false
+ * @return array
  */
-function get_crop( $attachment_id, $size ) {
+function get_crop( int $attachment_id, string $size ) : ?array {
 	// Fetch all registered image sizes.
 	$sizes = get_image_sizes();
 
 	// Check it's that passed in size exists.
 	if ( ! isset( $sizes[ $size ] ) ) {
-		return false;
+		return null;
 	}
 
 	$crop = get_post_meta( $attachment_id, "_crop_{$size}", true ) ?: [];
@@ -180,7 +189,7 @@ function get_crop( $attachment_id, $size ) {
 			$dimensions = get_maximum_crop( $meta_data['width'], $meta_data['height'], $size['width'], $size['height'] );
 
 			if ( $dimensions[0] === $meta_data['width'] && $dimensions[1] === $meta_data['height'] ) {
-				return false;
+				return null;
 			}
 
 			$crop['width']  = $dimensions[0];
@@ -193,10 +202,10 @@ function get_crop( $attachment_id, $size ) {
 	}
 
 	if ( empty( $crop ) ) {
-		return false;
+		return null;
 	}
 
-	return sprintf( '%dpx,%dpx,%dpx,%dpx', $crop['x'], $crop['y'], $crop['width'], $crop['height'] );
+	return $crop;
 }
 
 /**
@@ -265,7 +274,8 @@ function attachment_js( $response, $attachment ) {
 
 	// Add base Tachyon URL.
 	if ( function_exists( 'tachyon_url' ) ) {
-		$response['tachyon_url'] = tachyon_url( $response['url'] );
+		$response['original_url'] = $response['url'];
+		$response['url'] = tachyon_url( $response['url'] );
 	}
 
 	// Fill intermediate sizes array.

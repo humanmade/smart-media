@@ -54,9 +54,12 @@ const ImageEditor = Media.View.extend( {
 		this.update();
 	},
 	update() {
-		wp && wp.data && wp.data.dispatch( 'core' ).saveMedia( {
-			id: this.model.get( 'id' ),
-		} );
+		// Update the redux store in gutenberg.
+		if ( wp && wp.data ) {
+			wp.data.dispatch( 'core' ).saveMedia( {
+				id: this.model.get( 'id' ),
+			} );
+		}
 		this.model.fetch( {
 			success: () => this.loadEditor(),
 			error: () => {},

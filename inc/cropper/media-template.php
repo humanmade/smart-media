@@ -164,7 +164,7 @@
 					<?php esc_html_e( 'Original' ); ?>
 					<small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small>
 				</h3>
-				<img src="{{ data.model.get( 'tachyon_url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
+				<img src="{{ data.model.get( 'url' ) }}?fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
 		<# if ( data.model.get( 'mime' ).match( /image\/(jpe?g|png|gif)/ ) ) { #>
