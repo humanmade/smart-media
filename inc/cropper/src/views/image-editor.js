@@ -17,6 +17,7 @@ const ImageEditor = Media.View.extend( {
 	events: {
 		'click .button-apply-changes': 'saveCrop',
 		'click .button-reset': 'reset',
+		'click .button-remove-crop': 'removeCrop',
 		'click .image-preview-full': 'onClickPreview',
 		'click .focal-point': 'removeFocalPoint',
 		'click .imgedit-menu button': 'onEditImage',
@@ -250,6 +251,18 @@ const ImageEditor = Media.View.extend( {
 		this.$el.find( '.focal-point' ).hide();
 		event.stopPropagation();
 		this.setFocalPoint( false );
+	},
+	removeCrop() {
+		ajax.post( 'hm_remove_crop', {
+			_ajax_nonce: this.model.get( 'nonces' ).edit,
+			id: this.model.get( 'id' ),
+			size: this.model.get( 'size' ),
+		} )
+			.done( () => {
+				// Update & re-render.
+				this.update();
+			} )
+			.fail( error => console.log( error ) );
 	},
 	onEditImage() {
 		this.$el.find( '.focal-point, .note-focal-point' ).hide();

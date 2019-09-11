@@ -231,6 +231,8 @@
 			<button type="button" class="button imgedit-undo button-reset" disabled><span class="screen-reader-text"><?php esc_html_e( 'Reset', 'hm-smart-media' ); ?></span></button>
 			<# if ( data.model.get( 'size' ) && data.model.get( 'sizes' )[ data.model.get( 'size' ) ].hasOwnProperty( 'cropData' ) && ! data.model.get( 'sizes' )[ data.model.get( 'size' ) ].cropData.hasOwnProperty( 'x' ) ) { #>
 				<p class="note-auto-crop"><?php esc_html_e( 'The crop was set automatically, to override it click and drag on the image then use the crop button.', 'hm-smart-media' ); ?></p>
+			<# } else { #>
+				<button type="button" class="button button-secondary button-remove-crop"><?php esc_html_e( 'Remove custom crop', 'hm-smart-media' ); ?></button>
 			<# } #>
 		</div>
 	<# } #>

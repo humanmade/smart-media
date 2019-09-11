@@ -26,6 +26,7 @@ function setup() {
 
 	// Save crop data.
 	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
+	add_action( 'wp_ajax_hm_remove_crop', __NAMESPACE__ . '\\ajax_save_crop' );
 	add_action( 'wp_ajax_hm_save_focal_point', __NAMESPACE__ . '\\ajax_save_focal_point' );
 	add_action( 'wp_ajax_image-editor', __NAMESPACE__ . '\\on_edit_image', -10 );
 
@@ -125,12 +126,25 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	$data['original_url'] = $data['source_url'];
 	$data['source_url'] = tachyon_url( $data['source_url'] );
 
-	$focal_point = get_post_meta( $data['id'], '_focal_point', true ) ?: [];
-	$focal_point = array_map( 'absint', $focal_point );
-	$data['focal_point'] = (object) $focal_point;
+	$focal_point = get_post_meta( $data['id'], '_focal_point', true );
+	if ( empty( $focal_point ) ) {
+		$data['focal_point'] = null;
+	} else {
+		$data['focal_point'] = (object) array_map( 'absint', $focal_point );
+	}
 
 	foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
-		$data['media_details']['sizes'][ $size ]['crop'] = (object)( get_crop( $data['id'], $size ) ?? [] );
+		// Remove internal flag.
+		unset( $data['media_details']['sizes'][ $size ]['_tachyon_dynamic'] );
+		// Add crop data.
+		if ( $size !== 'full' ) {
+			$data['media_details']['sizes'][ $size ]['crop'] = get_crop( $data['id'], $size );
+		}
+		// Correct full size image details.
+		if ( $size === 'full' ) {
+			$data['media_details']['sizes'][ $size ]['file'] = explode( '?', $data['media_details']['sizes'][ $size ]['file'] )[0];
+			$data['media_details']['sizes'][ $size ]['source_url'] = $data['source_url'];
+		}
 	}
 
 	$response->set_data( $data );
@@ -309,19 +323,26 @@ function ajax_save_crop() {
 
 	check_ajax_referer( 'image_editor-' . $attachment->ID );
 
-	if ( ! isset( $_POST['crop'] ) ) {
-		wp_send_json_error( __( 'No cropping data received', 'hm-smart-media' ) );
-	}
-
-	$crop = map_deep( wp_unslash( $_POST['crop'] ), 'absint' );
 	$name = sanitize_text_field( wp_unslash( $_POST['size'] ) );
 
 	if ( ! in_array( $name, array_keys( get_image_sizes() ), true ) ) {
 		wp_send_json_error( __( 'Invalid thumbnail size received', 'hm-smart-media' ) );
 	}
 
-	// Save crop coordinates.
-	update_post_meta( $attachment->ID, "_crop_{$name}", $crop );
+	$action = sanitize_key( $_POST['action'] );
+
+	if ( $action === 'hm_save_crop' ) {
+		if ( ! isset( $_POST['crop'] ) ) {
+			wp_send_json_error( __( 'No cropping data received', 'hm-smart-media' ) );
+		}
+
+		$crop = map_deep( wp_unslash( $_POST['crop'] ), 'absint' );
+		update_post_meta( $attachment->ID, "_crop_{$name}", $crop );
+	}
+
+	if ( $action === 'hm_remove_crop' ) {
+		delete_post_meta( $attachment->ID, "_crop_{$name}" );
+	}
 
 	wp_send_json_success();
 }
