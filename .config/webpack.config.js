@@ -61,6 +61,7 @@ const commonConfig = {
 		'@wordpress/media': { this: [ 'wp', 'media' ] },
 		'@wordpress/ajax': { this: [ 'wp', 'ajax' ] },
 		'@wordpress/template': { this: [ 'wp', 'template' ] },
+		'@wordpress/i18n': { this: [ 'wp', 'i18n' ] },
 		'jQuery': 'jQuery',
 		lodash: '_',
 		wp: 'wp',

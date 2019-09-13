@@ -17,6 +17,7 @@ const ImageEditor = Media.View.extend( {
 	events: {
 		'click .button-apply-changes': 'saveCrop',
 		'click .button-reset': 'reset',
+		'click .button-remove-crop': 'removeCrop',
 		'click .image-preview-full': 'onClickPreview',
 		'click .focal-point': 'removeFocalPoint',
 		'click .imgedit-menu button': 'onEditImage',
@@ -54,13 +55,22 @@ const ImageEditor = Media.View.extend( {
 		this.update();
 	},
 	update() {
+		// Update the redux store in gutenberg.
+		if ( wp && wp.data ) {
+			wp.data.dispatch( 'core' ).saveMedia( {
+				id: this.model.get( 'id' ),
+			} );
+		}
 		this.model.fetch( {
 			success: () => this.loadEditor(),
 			error: () => {},
 		} );
 	},
+	applyRatio() {
+		const ratio = this.model.get( 'width' ) / Math.min( 1000, this.model.get( 'width' ) );
+		return [ ...arguments ].map( dim => Math.round( dim * ratio ) );
+	},
 	reset() {
-		const $image     = $( 'img[id^="image-preview-"]' );
 		const sizeName   = this.model.get( 'size' );
 		const sizes      = this.model.get( 'sizes' );
 		const focalPoint = this.model.get( 'focalPoint' );
@@ -86,8 +96,9 @@ const ImageEditor = Media.View.extend( {
 					height: cropHeight,
 				} );
 			} else {
+				const image = $( 'img[id^="image-preview-"]' ).get( 0 );
 				smartcrop
-					.crop( $image.get( 0 ), {
+					.crop( image, {
 						width: size.width,
 						height: size.height,
 					} )
@@ -240,6 +251,18 @@ const ImageEditor = Media.View.extend( {
 		this.$el.find( '.focal-point' ).hide();
 		event.stopPropagation();
 		this.setFocalPoint( false );
+	},
+	removeCrop() {
+		ajax.post( 'hm_remove_crop', {
+			_ajax_nonce: this.model.get( 'nonces' ).edit,
+			id: this.model.get( 'id' ),
+			size: this.model.get( 'size' ),
+		} )
+			.done( () => {
+				// Update & re-render.
+				this.update();
+			} )
+			.fail( error => console.log( error ) );
 	},
 	onEditImage() {
 		this.$el.find( '.focal-point, .note-focal-point' ).hide();
