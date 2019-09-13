@@ -46,8 +46,10 @@ function setup() {
 		remove_filter( 'rest_request_before_callbacks', [ Tachyon::instance(), 'should_rest_image_downsize' ], 10, 3 );
 	}
 
-	// Ignore $content_width for display context.
-	add_filter( 'editor_max_image_size', __NAMESPACE__ . '\\editor_max_image_size', 10, 3 );
+	// Ignore $content_width in REST API responses.
+	add_action( 'rest_api_init', function () {
+		add_filter( 'editor_max_image_size', __NAMESPACE__ . '\\editor_max_image_size', 10, 2 );
+	} );
 
 	// Disable intermediate thumbnail file generation.
 	add_filter( 'intermediate_image_sizes_advanced', __NAMESPACE__ . '\\prevent_thumbnail_generation' );
@@ -987,14 +989,9 @@ function nearest_defined_crop_size( $ratio ) {
  *
  * @param array $size_array
  * @param string $size
- * @param string $context
  * @return array
  */
-function editor_max_image_size( array $size_array, string $size, string $context ) : array {
-	if ( $context !== 'display' ) {
-		return $size_array;
-	}
-
+function editor_max_image_size( array $size_array, string $size ) : array {
 	$sizes = get_image_sizes();
 
 	if ( ! isset( $sizes[ $size ] ) ) {
