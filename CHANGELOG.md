@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## v0.2.0
+
+- Enhancement: Allow removal of custom crops
+- Enhancement: Ensure tachyon URLs are used globally
+- Enhancement: Add crop and focal point data to REST API responses
+- Enhancement: Support srcset and sizes for stored tachyon URLs
+
+## v0.1.15
+
 - Bug: Allow cropper to update crops for sizes that contain special characters #17
 
 ## v0.1.14
