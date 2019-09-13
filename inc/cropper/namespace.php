@@ -921,15 +921,21 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	// Replace sources array.
 	$sources = [];
 
+	// Resize method.
+	$method = 'resize';
+	preg_match( '/(fit|resize|lb)=/', $image_src, $matches );
+	if ( isset( $matches[1] ) ) {
+		$method = $matches[1];
+	}
+
 	foreach ( $modifiers as $modifier ) {
 		$target_width = round( $width * $modifier );
 
 		// Apply zoom to the image to get automatic quality adjustment.
 		$zoomed_image_url = add_query_arg( [
-			'fit' => false,
 			'w' => false,
 			'h' => false,
-			'resize' => "{$width},{$height}",
+			$method => "{$width},{$height}",
 			'zoom' => $modifier,
 		], $image_src );
 
