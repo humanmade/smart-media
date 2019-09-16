@@ -997,7 +997,12 @@ function nearest_defined_crop_size( $ratio ) {
  * @param string $size
  * @return array
  */
-function editor_max_image_size( array $size_array, string $size ) : array {
+function editor_max_image_size( array $size_array, $size ) : array {
+
+	if ( is_array( $size ) ) {
+		return $size;
+	}
+
 	$sizes = get_image_sizes();
 
 	if ( ! isset( $sizes[ $size ] ) ) {
