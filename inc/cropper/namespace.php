@@ -994,10 +994,15 @@ function nearest_defined_crop_size( $ratio ) {
  * Ignore the $content_width global in the display context.
  *
  * @param array $size_array
- * @param string $size
+ * @param string|array $size
  * @return array
  */
-function editor_max_image_size( array $size_array, string $size ) : array {
+function editor_max_image_size( array $size_array, $size ) : array {
+
+	if ( is_array( $size ) ) {
+		return $size;
+	}
+
 	$sizes = get_image_sizes();
 
 	if ( ! isset( $sizes[ $size ] ) ) {
