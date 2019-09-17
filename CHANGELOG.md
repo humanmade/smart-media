@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.1
+
+- Bug: Handle max size when non-named crop size is requested #22
+
 ## v0.2.0
 
 - Enhancement: Allow removal of custom crops
