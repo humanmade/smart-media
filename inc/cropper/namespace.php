@@ -383,7 +383,7 @@ function validate_parameters( $id_param = 'id' ) {
 
 	// phpcs:ignore
 	if ( empty( $_REQUEST[ $id_param ] ) || ! $attachment ) {
-		// translators: %s is replaced by 'id' referring to the attachment ID.
+		// translators: %s is replaced by the text 'id' referring to the parameter name.
 		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
 
