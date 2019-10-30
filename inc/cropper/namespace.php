@@ -97,25 +97,7 @@ function enqueue_scripts( $hook = false ) {
 		false
 	);
 
-	/**
-	 * Toggle focal point cropping support.
-	 *
-	 * @param bool $use_focal_point Pass true to enable focal point support.
-	 */
-	$use_focal_point = apply_filters( 'hm.smart-media.cropper.focal-point', true );
-
-	wp_add_inline_script(
-		'hm-smart-media-cropper',
-		sprintf( 'var HM = HM || {}; HM.SmartMedia = %s;', wp_json_encode( [
-			'i18n' => [
-				'cropTitle' => __( 'Edit image', 'hm-smart-media' ),
-				'cropSave'  => __( 'Save changes', 'hm-smart-media' ),
-				'cropClose' => __( 'Close editor', 'hm-smart-media' ),
-				'cropEdit'  => __( 'Edit crop', 'hm-smart-media' ),
-			],
-			'FocalPoint' => $use_focal_point,
-		] ) )
-	);
+	wp_set_script_translations( 'hm-smart-media-cropper', 'hm-smart-media' );
 }
 
 /**
@@ -298,9 +280,17 @@ function attachment_js( $response, $attachment ) {
 	// Fill intermediate sizes array.
 	$sizes = get_image_sizes();
 
-	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta ) {
+	$size_labels = apply_filters( 'image_size_names_choose', [
+		'thumbnail' => __( 'Thumbnail' ),
+		'medium'    => __( 'Medium' ),
+		'large'     => __( 'Large' ),
+		'full'      => __( 'Full Size' ),
+	] );
+
+	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta, $size_labels ) {
 		$src = wp_get_attachment_image_src( $attachment->ID, $name );
 
+		$size['label']    = $size_labels[ $name ] ?? null;
 		$size['url']      = $src[0];
 		$size['width']    = $src[1];
 		$size['height']   = $src[2];
@@ -393,7 +383,7 @@ function validate_parameters( $id_param = 'id' ) {
 
 	// phpcs:ignore
 	if ( empty( $_REQUEST[ $id_param ] ) || ! $attachment ) {
-		// translators: %s is replaced by 'id' referring to the attachment ID.
+		// translators: %s is replaced by the text 'id' referring to the parameter name.
 		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
 

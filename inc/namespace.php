@@ -44,6 +44,7 @@ function get_asset_url( $filename ) {
 		return false;
 	}
 
+	//phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 	$manifest = file_get_contents( $manifest_file );
 	$manifest = json_decode( $manifest, true );
 

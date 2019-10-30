@@ -17,7 +17,7 @@ const ImageEditSizes = Media.View.extend( {
 	setSize( e ) {
 		this.model.set( { size: e.currentTarget.dataset.size } );
 		e.currentTarget.parentNode.parentNode.querySelectorAll( 'button' ).forEach( button => {
-		button.className = '';
+			button.className = '';
 		} );
 		e.currentTarget.className = 'current';
 	},

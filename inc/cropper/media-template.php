@@ -81,21 +81,21 @@
 
 		<div class="settings">
 			<label class="setting" data-setting="url">
-				<span class="name"><?php _e('URL'); ?></span>
+				<span class="name"><?php _e( 'URL' ); ?></span>
 				<input type="text" value="{{ data.url }}" readonly />
 			</label>
 			<# var maybeReadOnly = data.can.save || data.allowLocalEdits ? '' : 'readonly'; #>
 			<?php if ( post_type_supports( 'attachment', 'title' ) ) : ?>
 			<label class="setting" data-setting="title">
-				<span class="name"><?php _e('Title'); ?></span>
+				<span class="name"><?php _e( 'Title' ); ?></span>
 				<input type="text" value="{{ data.title }}" {{ maybeReadOnly }} />
 			</label>
 			<?php endif; ?>
 			<# if ( 'audio' === data.type ) { #>
-			<?php foreach ( array(
+			<?php foreach ( [
 				'artist' => __( 'Artist' ),
 				'album' => __( 'Album' ),
-			) as $key => $label ) : ?>
+			] as $key => $label ) : ?>
 			<label class="setting" data-setting="<?php echo esc_attr( $key ) ?>">
 				<span class="name"><?php echo $label ?></span>
 				<input type="text" value="{{ data.<?php echo $key ?> || data.meta.<?php echo $key ?> || '' }}" />
@@ -173,7 +173,11 @@
 				<li>
 					<button type="button" data-size="{{ size }}" class="{{ data.model.get( 'size' ) === size ? 'current' : '' }}">
 						<h3>
-							{{ size.replace( /[_-]+/g,' ' ) }}
+							<# if ( props.label ) { #>
+								{{ props.label }}
+							<# } else { #>
+								<code>{{ size }}</code>
+							<# } #>
 							<small>{{ props.width }} x {{ props.height }}</small>
 						</h3>
 						<img src="{{ props.url }}" height="80" alt="{{ size }}" draggable="false" />
@@ -187,9 +191,9 @@
 
 <script type="text/html" id="tmpl-hm-thumbnail-editor">
 	<# if ( data.model.get( 'size' ) === 'full' || data.model.get( 'size' ) === 'full-orig' ) { #>
-		<h2><?php esc_html_e( 'Edit original image' ) ?> <small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small></h2>
+		<h2><?php esc_html_e( 'Edit original image', 'hm-smart-media' ) ?> <small>{{ data.model.get( 'width' ) }} x {{ data.model.get( 'height' ) }}</small></h2>
 	<# } else { #>
-		<h2><?php esc_html_e( 'Edit crop' ) ?></h2>
+		<h2><?php esc_html_e( 'Edit crop', 'hm-smart-media' ) ?></h2>
 	<# } #>
 	<# if ( data.model.get( 'size' ) === 'full' || data.model.get( 'size' ) === 'full-orig' ) { #>
 		<div class="imgedit-menu wp-clearfix">
@@ -217,9 +221,7 @@
 
 			<div class="imgedit-wait" id="imgedit-wait-{{ data.model.get( 'id' ) }}"></div>
 
-			<# if ( HM.SmartMedia.FocalPoint ) { #>
-				<p class="note-focal-point"><?php esc_html_e( 'Click anywhere on the image to set a focal point for automatic cropping.', 'hm-smart-media' ); ?></p>
-			<# } #>
+			<p class="note-focal-point"><?php esc_html_e( 'Click anywhere on the image to set a focal point for automatic cropping.', 'hm-smart-media' ); ?></p>
 
 			<# if ( ! data.model.get('editor').can.rotate ) { #>
 				<p class="note-no-rotate"><em><?php esc_html_e( 'Image rotation is not supported by your web host.' ); ?></em></p>

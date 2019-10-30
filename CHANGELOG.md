@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v0.2.2
+
+- Bug: Add missing textdomains
+- Bug: Register textdomain for script handle
+- Bug: Add wp-i18n as a dependency of the cropper
+
 ## v0.2.1
 
 - Bug: Handle max size when non-named crop size is requested #22
