@@ -297,9 +297,17 @@ function attachment_js( $response, $attachment ) {
 	// Fill intermediate sizes array.
 	$sizes = get_image_sizes();
 
-	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta ) {
+	$size_labels = apply_filters( 'image_size_names_choose', [
+		'thumbnail' => __( 'Thumbnail' ),
+		'medium'    => __( 'Medium' ),
+		'large'     => __( 'Large' ),
+		'full'      => __( 'Full Size' ),
+	] );
+
+	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta, $size_labels ) {
 		$src = wp_get_attachment_image_src( $attachment->ID, $name );
 
+		$size['label']    = $size_labels[ $name ] ?? null;
 		$size['url']      = $src[0];
 		$size['width']    = $src[1];
 		$size['height']   = $src[2];
