@@ -96,25 +96,7 @@ function enqueue_scripts( $hook = false ) {
 		false
 	);
 
-	/**
-	 * Toggle focal point cropping support.
-	 *
-	 * @param bool $use_focal_point Pass true to enable focal point support.
-	 */
-	$use_focal_point = apply_filters( 'hm.smart-media.cropper.focal-point', true );
-
-	wp_add_inline_script(
-		'hm-smart-media-cropper',
-		sprintf( 'var HM = HM || {}; HM.SmartMedia = %s;', wp_json_encode( [
-			'i18n' => [
-				'cropTitle' => __( 'Edit image', 'hm-smart-media' ),
-				'cropSave'  => __( 'Save changes', 'hm-smart-media' ),
-				'cropClose' => __( 'Close editor', 'hm-smart-media' ),
-				'cropEdit'  => __( 'Edit crop', 'hm-smart-media' ),
-			],
-			'FocalPoint' => $use_focal_point,
-		] ) )
-	);
+	wp_set_script_translations( 'hm-smart-media-cropper', 'hm-smart-media' );
 }
 
 /**
