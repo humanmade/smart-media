@@ -1,8 +1,11 @@
 /* Hide built in image editor */
 .wp-core-ui {
-	.edit-attachment,
-	.button[id^="imgedit-open-btn-"] {
-		display: none;
+
+	&.mode-edit-image {
+		.edit-attachment,
+		.button[id^="imgedit-open-btn-"] {
+			display: none;
+		}
 	}
 
 	.media-image-edit {
