@@ -8,6 +8,7 @@ jobs:
       only:
         # Whitelist branches to build for.
         - master
+        - /release-.*/
     steps:
       # Checkout repo & subs:
       - checkout
