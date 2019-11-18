@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.3
+
+- Bug: Don't hide edit image link if smart media UI not active #30
+
 ## v0.2.2
 
 - Bug: Add missing textdomains
