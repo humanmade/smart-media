@@ -178,6 +178,10 @@ function get_crop( int $attachment_id, string $size ) : ?array {
 	// Infer crop from focal point if available.
 	if ( empty( $crop ) ) {
 		$meta_data = wp_get_attachment_metadata( $attachment_id );
+		if ( ! $meta_data ) {
+			return null;
+		}
+
 		$size      = $sizes[ $size ];
 
 		$focal_point = get_post_meta( $attachment_id, '_focal_point', true ) ?: [];
@@ -242,7 +246,12 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
-	$meta         = wp_get_attachment_metadata( $attachment->ID );
+	$meta = wp_get_attachment_metadata( $attachment->ID );
+
+	if ( ! $meta ) {
+		return $response;
+	}
+
 	$backup_sizes = get_post_meta( $attachment->ID, '_wp_attachment_backup_sizes', true );
 
 	// Check width and height are set, in rare cases it can fail.
