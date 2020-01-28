@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.4
+
+- Bug: Check metadata is an array before passing to `add_srcset_and_sizes()`
+
 ## v0.2.3
 
 - Bug: Don't hide edit image link if smart media UI not active #30
