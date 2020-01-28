@@ -774,7 +774,11 @@ function make_content_images_responsive( string $content ) : string {
 	foreach ( $selected_images as $image => $image_data ) {
 		$attachment_id = $image_data['id'];
 		$image_meta = wp_get_attachment_metadata( $attachment_id );
-		$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
+		if ( $image_meta ) {
+			$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
+		} else {
+			trigger_error( sprintf( 'Could not retrieve image meta data for Attachment ID "%s"', (string) $attachment_id ), E_USER_WARNING );
+		}
 	}
 
 	return $content;
