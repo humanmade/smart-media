@@ -15,11 +15,26 @@ const ImageEditView = Media.View.extend( {
 			this.model.set( { size: 'full' } );
 		}
 
+		// Get current image block size if available.
+		this.setSizeForBlock();
+
 		// Re-render on certain updates.
 		this.listenTo( this.model, 'change:url', this.onUpdate );
 
 		// Initial render.
 		this.onUpdate();
+	},
+	setSizeForBlock() {
+		if ( ! wp || ! wp.data ) {
+			return;
+		}
+
+		const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
+		if ( ! selectedBlock || selectedBlock.name !== 'core/image' ) {
+			return;
+		}
+
+		this.model.set( { size: selectedBlock.attributes.sizeSlug } );
 	},
 	onUpdate() {
 		const views = [];

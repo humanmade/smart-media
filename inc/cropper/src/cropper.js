@@ -2,6 +2,28 @@ import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditView from './views/image-edit';
+import {
+  mapAttachmentToBlockAttributes,
+  registerAttachmentToBlockAttributesMap
+} from './utils';
+
+// Export registerBlockAttachmentToAttributesMap function.
+window.SmartMedia = window.SmartMedia || {};
+window.SmartMedia.registerAttachmentToBlockAttributesMap = registerAttachmentToBlockAttributesMap;
+
+// Register attachment to attribute map for core/image block.
+registerAttachmentToBlockAttributesMap( 'core/image', ( size, image ) => {
+  // Don't update block if a non user selectable size is currently being edited.
+  if ( ! image.label ) {
+    return null;
+  }
+  return {
+    sizeSlug: size,
+    url: image.url,
+    width: image.width,
+    height: image.height,
+  };
+} );
 
 import './cropper.scss';
 
@@ -141,7 +163,10 @@ Media.events.on( 'frame:select:init', frame => {
           style: 'primary',
           text: __( 'Select', 'hm-smart-media' ),
           click: () => {
-            const { close, event, reset, state } = frame.options.mutableButton || frame.options.button || {};
+            const { close, event, reset, state } = Object.assign( frame.options.mutableButton || frame.options.button, {
+              event: 'select',
+              close: true,
+            } );
 
             if ( close ) {
               frame.close();
@@ -157,6 +182,38 @@ Media.events.on( 'frame:select:init', frame => {
 
             if ( reset ) {
               frame.reset();
+            }
+
+            // Update current block if we can map the attachment to attributes.
+            if ( wp && wp.data ) {
+              const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
+              if (
+                ! selectedBlock ||
+                ! window.SmartMedia.ImageBlockAttributeMaps ||
+                ! window.SmartMedia.ImageBlockAttributeMaps[ selectedBlock.name ]
+              ) {
+                return;
+              }
+
+              const model = frame.state( 'edit' ).get( 'selection' ).first();
+              const sizes = model.get( 'sizes' );
+              const size = model.get( 'size' );
+
+              const attributes = mapAttachmentToBlockAttributes(
+                selectedBlock.name,
+                size,
+                sizes[ size ],
+                model.attributes
+              );
+
+              // Don't update if a falsey value is returned.
+              if ( ! attributes ) {
+                return;
+              }
+
+              wp.data.dispatch( 'core/block-editor' ).updateBlock( selectedBlock.clientId, {
+                attributes,
+              } );
             }
           },
           priority: 10,
@@ -181,13 +238,13 @@ Media.events.on( 'frame:select:init', frame => {
 
     // Set sidebar views.
     sidebar.set( 'details', new Media.view.Attachment.Details( {
-      controller: this.controller,
+      controller: frame,
       model: single,
       priority: 80
     } ) );
 
     sidebar.set( 'compat', new Media.view.AttachmentCompat( {
-      controller: this.controller,
+      controller: frame,
       model: single,
       priority: 120
     } ) );
@@ -196,7 +253,7 @@ Media.events.on( 'frame:select:init', frame => {
 
     if ( display ) {
       sidebar.set( 'display', new Media.view.Settings.AttachmentDisplay( {
-        controller:   this.controller,
+        controller:   frame,
         model:        this.model.display( single ),
         attachment:   single,
         priority:     160,

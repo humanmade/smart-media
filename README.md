@@ -45,6 +45,29 @@ To disable the feature add the following:
 add_filter( 'hm.smart-media.cropper', '__return_false' );
 ```
 
+The image cropping IU provides support for updating Gutenberg block attributes based on the current selection using the following function:
+
+```js
+window.SmartMedia.registerAttachmentToBlockAttributesMap( 'core/image', ( size, image, attachment ) => {
+  if ( ! image.label ) {
+    return null;
+  }
+  return {
+    sizeSlug: size,
+    url: image.url,
+    width: image.width,
+    height: image.height,
+  };
+} );
+```
+
+The function takes 2 parameters:
+
+- `block`: The name of the block to map attributes for
+- `callback`: A function that accepts the image `size` name, an `image` object containing url, width, height, crop data and label for the image size, and lastly the full attachment data object.
+
+The callback should return an object or `null`. Passing `null` will prevent updating the currently selected block.
+
 ## Roadmap
 
 Planned features include:
@@ -57,7 +80,3 @@ Planned features include:
 First of all thanks for using this plugin and thanks for contributing!
 
 To get started check out the [contributing documentation](./CONTRIBUTING.md).
-
-
-
-
