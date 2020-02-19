@@ -840,6 +840,10 @@ function add_srcset_and_sizes( array $image_data, array $image_meta, int $attach
 		if ( isset( $tachyon_args['h'] ) ) {
 			$height = (int) $tachyon_args['h'];
 		}
+		if ( ! $width && ! $height ) {
+			$width = $image_meta['width'] ?: false;
+			$height = $image_meta['height'] ?: false;
+		}
 		if ( $width && ! $height ) {
 			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width );
 		}
