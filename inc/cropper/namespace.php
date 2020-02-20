@@ -147,6 +147,10 @@ function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 	if ( ! isset( $downsize_args['attachment_id'] ) || ! isset( $downsize_args['size'] ) ) {
 		return $tachyon_args;
 	}
+	
+	if ( ! is_int( $downsize_args['attachment_id'] ) ) {
+		return $tachyon_args;
+	}
 
 	$crop = get_crop( $downsize_args['attachment_id'], $downsize_args['size'] );
 
