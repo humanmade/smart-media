@@ -148,6 +148,7 @@ function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 		return $tachyon_args;
 	}
 	
+	// The value we're picking up can be filtered and upstream bugs introduced, this will avoid fatal errors.
 	if ( ! is_int( $downsize_args['attachment_id'] ) ) {
 		return $tachyon_args;
 	}
