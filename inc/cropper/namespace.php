@@ -109,8 +109,11 @@ function enqueue_scripts( $hook = false ) {
  */
 function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	$data = $response->get_data();
-	$data['original_url'] = $data['source_url'];
-	$data['source_url'] = tachyon_url( $data['source_url'] );
+
+	if ( isset( $data['source_url'] ) ) {
+		$data['original_url'] = $data['source_url'];
+		$data['source_url'] = tachyon_url( $data['source_url'] );
+	}
 
 	$focal_point = get_post_meta( $data['id'], '_focal_point', true );
 	if ( empty( $focal_point ) ) {
@@ -119,17 +122,19 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		$data['focal_point'] = (object) array_map( 'absint', $focal_point );
 	}
 
-	foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
-		// Remove internal flag.
-		unset( $data['media_details']['sizes'][ $size ]['_tachyon_dynamic'] );
-		// Add crop data.
-		if ( $size !== 'full' ) {
-			$data['media_details']['sizes'][ $size ]['crop'] = get_crop( $data['id'], $size );
-		}
-		// Correct full size image details.
-		if ( $size === 'full' ) {
-			$data['media_details']['sizes'][ $size ]['file'] = explode( '?', $data['media_details']['sizes'][ $size ]['file'] )[0];
-			$data['media_details']['sizes'][ $size ]['source_url'] = $data['source_url'];
+	if ( isset( $data['media_details'] ) ) {
+		foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
+			// Remove internal flag.
+			unset( $data['media_details']['sizes'][ $size ]['_tachyon_dynamic'] );
+			// Add crop data.
+			if ( $size !== 'full' ) {
+				$data['media_details']['sizes'][ $size ]['crop'] = get_crop( $data['id'], $size );
+			}
+			// Correct full size image details.
+			if ( $size === 'full' ) {
+				$data['media_details']['sizes'][ $size ]['file'] = explode( '?', $data['media_details']['sizes'][ $size ]['file'] )[0];
+				$data['media_details']['sizes'][ $size ]['source_url'] = $data['source_url'];
+			}
 		}
 	}
 
@@ -297,9 +302,10 @@ function attachment_js( $response, $attachment ) {
 		'full'      => __( 'Full Size' ),
 	] );
 
-	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $meta, $size_labels ) {
+	$response['sizes'] = array_map( function ( $size, $name ) use ( $attachment, $size_labels ) {
 		$src = wp_get_attachment_image_src( $attachment->ID, $name );
 
+		$size['name']     = $name;
 		$size['label']    = $size_labels[ $name ] ?? null;
 		$size['url']      = $src[0];
 		$size['width']    = $src[1];

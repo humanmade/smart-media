@@ -19,8 +19,6 @@ addFilter(
     return {
       sizeSlug: image.size,
       url: image.url,
-      width: image.width,
-      height: image.height,
     };
   }
 );
@@ -144,7 +142,7 @@ Media.events.on( 'frame:select:init', frame => {
         tagName: 'div',
         className: 'media-image-edit',
         controller: frame,
-        model: frame.state( 'edit' ).get( 'selection' ).first(),
+        model: frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection || frame._selection.single ),
       } ),
       editState.sidebar,
     ];
