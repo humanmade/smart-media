@@ -1,31 +1,37 @@
+import { applyFilters, addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditView from './views/image-edit';
-import {
-  mapAttachmentToBlockAttributes,
-  registerAttachmentToBlockAttributesMap
-} from './utils';
-
-// Export registerBlockAttachmentToAttributesMap function.
-window.SmartMedia = window.SmartMedia || {};
-window.SmartMedia.registerAttachmentToBlockAttributesMap = registerAttachmentToBlockAttributesMap;
-
-// Register attachment to attribute map for core/image block.
-registerAttachmentToBlockAttributesMap( 'core/image', ( size, image ) => {
-  // Don't update block if a non user selectable size is currently being edited.
-  if ( ! image.label ) {
-    return null;
-  }
-  return {
-    sizeSlug: size,
-    url: image.url,
-    width: image.width,
-    height: image.height,
-  };
-} );
 
 import './cropper.scss';
+
+// Register attachment to attribute map for core blocks.
+addFilter(
+  'smartmedia.cropper.updateBlockAttributesOnSelect.core.image',
+  'smartmedia/cropper/update-block-on-select/core/image',
+  ( attributes, image ) => {
+    // Only user selectable image sizes have a label so return early if this is missing.
+    if ( ! image.label ) {
+      return attributes;
+    }
+
+    return {
+      sizeSlug: image.size,
+      url: image.url,
+      width: image.width,
+      height: image.height,
+    };
+  }
+);
+
+addFilter(
+  'smartmedia.cropper.selectSizeFromBlockAttributes.core.image',
+  'smartmedia/cropper/select-size-from-block-attributes/core/image',
+  ( size, block ) => {
+    return size || block.attributes.sizeSlug || 'full';
+  }
+);
 
 // Create a high level event we can hook into for media frame creation.
 const MediaFrame = Media.view.MediaFrame;
@@ -187,32 +193,46 @@ Media.events.on( 'frame:select:init', frame => {
             // Update current block if we can map the attachment to attributes.
             if ( wp && wp.data ) {
               const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
-              if (
-                ! selectedBlock ||
-                ! window.SmartMedia.ImageBlockAttributeMaps ||
-                ! window.SmartMedia.ImageBlockAttributeMaps[ selectedBlock.name ]
-              ) {
+              if ( ! selectedBlock ) {
                 return;
               }
 
-              const model = frame.state( 'edit' ).get( 'selection' ).first();
-              const sizes = model.get( 'sizes' );
-              const size = model.get( 'size' );
+              // Get the attachment data and selected image size data.
+              const attachment = frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection && frame._selection.single );
 
-              const attributes = mapAttachmentToBlockAttributes(
-                selectedBlock.name,
-                size,
-                sizes[ size ],
-                model.attributes
+              if ( ! attachment ) {
+                return;
+              }
+
+              const sizes = attachment.get( 'sizes' );
+              const size = attachment.get( 'size' );
+
+              const image = sizes[ size ];
+              image.id = attachment.get( 'id' );
+              image.size = size;
+
+              const attributesByBlock = applyFilters(
+                `smartmedia.cropper.updateBlockAttributesOnSelect.${ selectedBlock.name.replace( /\W+/g, '.' ) }`,
+                null,
+                image,
+                attachment
+              );
+
+              const attributesForAllBlocks = applyFilters(
+                `smartmedia.cropper.updateBlockAttributesOnSelect`,
+                attributesByBlock,
+                selectedBlock,
+                image,
+                attachment
               );
 
               // Don't update if a falsey value is returned.
-              if ( ! attributes ) {
+              if ( ! attributesForAllBlocks ) {
                 return;
               }
 
               wp.data.dispatch( 'core/block-editor' ).updateBlock( selectedBlock.clientId, {
-                attributes,
+                attributes: attributesForAllBlocks,
               } );
             }
           },

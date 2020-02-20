@@ -1,3 +1,4 @@
+import { applyFilters } from '@wordpress/hooks';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditSizes from './image-edit-sizes';
@@ -15,8 +16,8 @@ const ImageEditView = Media.View.extend( {
 			this.model.set( { size: 'full' } );
 		}
 
-		// Get current image block size if available.
-		this.setSizeForBlock();
+		// Get current size from block attributes if available.
+		this.setSizeFromBlock();
 
 		// Re-render on certain updates.
 		this.listenTo( this.model, 'change:url', this.onUpdate );
@@ -24,17 +25,33 @@ const ImageEditView = Media.View.extend( {
 		// Initial render.
 		this.onUpdate();
 	},
-	setSizeForBlock() {
+	setSizeFromBlock() {
 		if ( ! wp || ! wp.data ) {
 			return;
 		}
 
 		const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
-		if ( ! selectedBlock || selectedBlock.name !== 'core/image' ) {
+		if ( ! selectedBlock ) {
 			return;
 		}
 
-		this.model.set( { size: selectedBlock.attributes.sizeSlug } );
+		const sizeForBlock = applyFilters(
+			`smartmedia.cropper.selectSizeFromBlockAttributes.${ selectedBlock.name.replace( /\W+/g, '.' ) }`,
+			null,
+			selectedBlock
+		);
+
+		const size = applyFilters(
+			`smartmedia.cropper.selectSizeFromBlockAttributes`,
+			sizeForBlock,
+			selectedBlock
+		);
+
+		if ( ! size ) {
+			return;
+		}
+
+		this.model.set( { size } );
 	},
 	onUpdate() {
 		const views = [];

@@ -92,6 +92,7 @@ function enqueue_scripts( $hook = false ) {
 			'media-views',
 			'imgareaselect',
 			'wp-i18n',
+			'wp-hooks',
 		],
 		null,
 		false
