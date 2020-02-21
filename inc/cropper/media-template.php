@@ -6,6 +6,12 @@
 			<div class="thumbnail thumbnail-{{ data.type }}">
 				<# if ( data.uploading ) { #>
 					<div class="media-progress-bar"><div></div></div>
+				<# } else if ( data.type === 'pdf' ) { #>
+					<# if ( data.sizes && data.sizes.full ) { #>
+						<img class="details-image icon" src="{{ data.sizes.full.url }}" draggable="false" alt="" />
+					<# } else { #>
+						<img class="details-image icon" src="{{ data.icon }}" draggable="false" alt="" />
+					<# } #>
 				<# } else if ( -1 === jQuery.inArray( data.type, [ 'audio', 'video' ] ) ) { #>
 					<img class="details-image icon" src="{{ data.icon }}" draggable="false" alt="" />
 				<# } #>
@@ -267,14 +273,18 @@
 <script type="text/html" id="tmpl-hm-thumbnail-preview">
 	<div class="hm-thumbnail-editor__image-wrap">
 		<div class="hm-thumbnail-editor__image">
-			<img
-				class="image-preview"
-				src="{{ data.model.get( 'url' ) }}"
-				width="{{ data.model.get( 'width' ) }}"
-				height="{{ data.model.get( 'height' ) }}"
-				alt=""
-				draggable="false"
-			/>
+			<# if ( data.model.get( 'sizes' ) ) { #>
+				<img
+					class="image-preview"
+					src="{{ data.model.get( 'sizes' ).full.url }}"
+					width="{{ data.model.get( 'sizes' ).full.width }}"
+					height="{{ data.model.get( 'sizes' ).full.height }}"
+					draggable="false"
+					alt=""
+				/>
+			<# } else { #>
+				<img class="details-image icon" src="{{ data.model.get( 'icon' ) }}" draggable="false" alt="" />
+			<# } #>
 		</div>
 	</div>
 </script>

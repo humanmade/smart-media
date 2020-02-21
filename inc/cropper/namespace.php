@@ -17,6 +17,7 @@ use function HM\Media\get_asset_url;
 function setup() {
 	// Add initial crop data for js attachment models.
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 200, 3 );
+	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_thumbs', 100 );
 
 	// Add tachyon URL to REST responses.
 	add_filter( 'rest_prepare_attachment', __NAMESPACE__ . '\\rest_api_fields', 10, 3 );
@@ -114,31 +115,63 @@ function enqueue_scripts( $hook = false ) {
 function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	$data = $response->get_data();
 
-	if ( isset( $data['source_url'] ) ) {
+	if ( is_wp_error( $data ) ) {
+		return $response;
+	}
+
+	if ( is_object( $data ) ) {
+		$data = (array) $data;
+	}
+
+	// Confirm it's definitely an image.
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
+		return $response;
+	}
+
+	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
 		$data['source_url'] = tachyon_url( $data['source_url'] );
+
+		// Add focal point.
+		$focal_point = get_post_meta( $data['id'], '_focal_point', true );
+		if ( empty( $focal_point ) ) {
+			$data['focal_point'] = null;
+		} else {
+			$data['focal_point'] = (object) array_map( 'absint', $focal_point );
+		}
 	}
 
-	$focal_point = get_post_meta( $data['id'], '_focal_point', true );
-	if ( empty( $focal_point ) ) {
-		$data['focal_point'] = null;
-	} else {
-		$data['focal_point'] = (object) array_map( 'absint', $focal_point );
-	}
-
-	if ( isset( $data['media_details'] ) ) {
-		foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
+	if ( isset( $data['media_details']['sizes'] ) ) {
+		$full_size_thumb = $data['media_details']['sizes']['full']['source_url'];
+		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
-			unset( $data['media_details']['sizes'][ $size ]['_tachyon_dynamic'] );
-			// Add crop data.
-			if ( $size !== 'full' ) {
-				$data['media_details']['sizes'][ $size ]['crop'] = get_crop( $data['id'], $size );
+			unset( $size['_tachyon_dynamic'] );
+
+			// Handle PDF thumbs.
+			if ( function_exists( 'tachyon_url' ) ) {
+				if ( $name === 'full' ) {
+					$size['source_url'] = tachyon_url( $full_size_thumb );
+				} else {
+					$size['source_url'] = tachyon_url( $full_size_thumb, [
+						'resize' => sprintf( '%d,%d', $size['width'], $size['height'] ),
+					] );
+				}
 			}
-			// Correct full size image details.
-			if ( $size === 'full' ) {
-				$data['media_details']['sizes'][ $size ]['file'] = explode( '?', $data['media_details']['sizes'][ $size ]['file'] )[0];
-				$data['media_details']['sizes'][ $size ]['source_url'] = $data['source_url'];
+
+			// Handle image sizes.
+			if ( $data['media_type'] === 'image' ) {
+				// Add crop data.
+				if ( $name !== 'full' ) {
+					$size['crop'] = get_crop( $data['id'], $size );
+				}
+				// Correct full size image details.
+				if ( $name === 'full' ) {
+					$size['file'] = explode( '?', $size['file'] )[0];
+					$size['source_url'] = $data['source_url'];
+				}
 			}
+
+			$data['media_details']['sizes'][ $name ] = $size;
 		}
 	}
 
@@ -157,7 +190,7 @@ function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 	if ( ! isset( $downsize_args['attachment_id'] ) || ! isset( $downsize_args['size'] ) ) {
 		return $tachyon_args;
 	}
-	
+
 	// The value we're picking up can be filtered and upstream bugs introduced, this will avoid fatal errors.
 	if ( ! is_int( $downsize_args['attachment_id'] ) ) {
 		return $tachyon_args;
@@ -257,6 +290,7 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
+	// We can't edit or SVGs.
 	if ( $response['mime'] === 'image/svg+xml' ) {
 		return $response;
 	}
@@ -328,6 +362,38 @@ function attachment_js( $response, $attachment ) {
 
 	// Focal point.
 	$response['focalPoint'] = (object) ( get_post_meta( $attachment->ID, '_focal_point', true ) ?: [] );
+
+	return $response;
+}
+
+/**
+ * Updates attachments that aren't images but have thumbnails
+ * like PDFs to use Tachyon URLs.
+ *
+ * @param array $response The attachment JS.
+ * @return array
+ */
+function attachment_thumbs( $response ) : array {
+	if ( ! function_exists( 'tachyon_url' ) || ! is_array( $response ) ) {
+		return $response;
+	}
+
+	// Handle attachment thumbnails.
+	$full_size_thumb = $response['sizes']['full']['url'] ?? false;
+
+	if ( ! $full_size_thumb || ! isset( $response['sizes'] ) ) {
+		return $response;
+	}
+
+	foreach ( $response['sizes'] as $name => $size ) {
+		if ( $name === 'full' ) {
+			$response['sizes'][ $name ]['url'] = tachyon_url( $full_size_thumb );
+		} else {
+			$response['sizes'][ $name ]['url'] = tachyon_url( $full_size_thumb, [
+				'resize' => sprintf( '%d,%d', $size['width'], $size['height'] ),
+			] );
+		}
+	}
 
 	return $response;
 }

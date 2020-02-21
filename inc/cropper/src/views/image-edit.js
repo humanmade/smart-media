@@ -60,14 +60,13 @@ const ImageEditView = Media.View.extend( {
 		if ( this.model.get( 'uploading' ) || ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) ) {
 			views.push( new Media.view.Spinner() );
 		} else {
-			views.push( new ImageEditSizes( {
-				controller: this.controller,
-				model: this.model,
-				priority: 10,
-			} ) );
-
 			// Ensure this attachment is editable.
 			if ( this.model.get( 'mime' ).match( /image\/(gif|jpe?g|png)/ ) ) {
+				views.push( new ImageEditSizes( {
+					controller: this.controller,
+					model: this.model,
+					priority: 10,
+				} ) );
 				views.push( new ImageEditor( {
 					controller: this.controller,
 					model: this.model,
