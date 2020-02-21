@@ -62,6 +62,7 @@ const commonConfig = {
 		'@wordpress/ajax': { this: [ 'wp', 'ajax' ] },
 		'@wordpress/template': { this: [ 'wp', 'template' ] },
 		'@wordpress/i18n': { this: [ 'wp', 'i18n' ] },
+		'@wordpress/hooks': { this: [ 'wp', 'hooks' ] },
 		'jQuery': 'jQuery',
 		lodash: '_',
 		wp: 'wp',

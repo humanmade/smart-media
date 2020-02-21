@@ -13,6 +13,9 @@ const ImageEditSizes = Media.View.extend( {
 	},
 	initialize() {
 		this.listenTo( this.model, 'change:sizes', this.render );
+		this.on( 'ready', () => {
+			this.el.querySelector( '.current' ).scrollIntoView();
+		} );
 	},
 	setSize( e ) {
 		this.model.set( { size: e.currentTarget.dataset.size } );

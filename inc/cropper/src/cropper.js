@@ -1,9 +1,35 @@
+import { applyFilters, addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ImageEditView from './views/image-edit';
 
 import './cropper.scss';
+
+// Register attachment to attribute map for core blocks.
+addFilter(
+  'smartmedia.cropper.updateBlockAttributesOnSelect.core.image',
+  'smartmedia/cropper/update-block-on-select/core/image',
+  ( attributes, image ) => {
+    // Only user selectable image sizes have a label so return early if this is missing.
+    if ( ! image.label ) {
+      return attributes;
+    }
+
+    return {
+      sizeSlug: image.size,
+      url: image.url,
+    };
+  }
+);
+
+addFilter(
+  'smartmedia.cropper.selectSizeFromBlockAttributes.core.image',
+  'smartmedia/cropper/select-size-from-block-attributes/core/image',
+  ( size, block ) => {
+    return size || block.attributes.sizeSlug || 'full';
+  }
+);
 
 // Create a high level event we can hook into for media frame creation.
 const MediaFrame = Media.view.MediaFrame;
@@ -116,7 +142,7 @@ Media.events.on( 'frame:select:init', frame => {
         tagName: 'div',
         className: 'media-image-edit',
         controller: frame,
-        model: frame.state( 'edit' ).get( 'selection' ).first(),
+        model: frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection || frame._selection.single ),
       } ),
       editState.sidebar,
     ];
@@ -141,7 +167,10 @@ Media.events.on( 'frame:select:init', frame => {
           style: 'primary',
           text: __( 'Select', 'hm-smart-media' ),
           click: () => {
-            const { close, event, reset, state } = frame.options.mutableButton || frame.options.button || {};
+            const { close, event, reset, state } = Object.assign( frame.options.mutableButton || frame.options.button, {
+              event: 'select',
+              close: true,
+            } );
 
             if ( close ) {
               frame.close();
@@ -157,6 +186,52 @@ Media.events.on( 'frame:select:init', frame => {
 
             if ( reset ) {
               frame.reset();
+            }
+
+            // Update current block if we can map the attachment to attributes.
+            if ( wp && wp.data ) {
+              const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
+              if ( ! selectedBlock ) {
+                return;
+              }
+
+              // Get the attachment data and selected image size data.
+              const attachment = frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection && frame._selection.single );
+
+              if ( ! attachment ) {
+                return;
+              }
+
+              const sizes = attachment.get( 'sizes' );
+              const size = attachment.get( 'size' );
+
+              const image = sizes[ size ];
+              image.id = attachment.get( 'id' );
+              image.size = size;
+
+              const attributesByBlock = applyFilters(
+                `smartmedia.cropper.updateBlockAttributesOnSelect.${ selectedBlock.name.replace( /\W+/g, '.' ) }`,
+                null,
+                image,
+                attachment
+              );
+
+              const attributesForAllBlocks = applyFilters(
+                'smartmedia.cropper.updateBlockAttributesOnSelect',
+                attributesByBlock,
+                selectedBlock,
+                image,
+                attachment
+              );
+
+              // Don't update if a falsey value is returned.
+              if ( ! attributesForAllBlocks ) {
+                return;
+              }
+
+              wp.data.dispatch( 'core/block-editor' ).updateBlock( selectedBlock.clientId, {
+                attributes: attributesForAllBlocks,
+              } );
             }
           },
           priority: 10,
@@ -181,13 +256,13 @@ Media.events.on( 'frame:select:init', frame => {
 
     // Set sidebar views.
     sidebar.set( 'details', new Media.view.Attachment.Details( {
-      controller: this.controller,
+      controller: frame,
       model: single,
       priority: 80
     } ) );
 
     sidebar.set( 'compat', new Media.view.AttachmentCompat( {
-      controller: this.controller,
+      controller: frame,
       model: single,
       priority: 120
     } ) );
@@ -196,7 +271,7 @@ Media.events.on( 'frame:select:init', frame => {
 
     if ( display ) {
       sidebar.set( 'display', new Media.view.Settings.AttachmentDisplay( {
-        controller:   this.controller,
+        controller:   frame,
         model:        this.model.display( single ),
         attachment:   single,
         priority:     160,

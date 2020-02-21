@@ -1,6 +1,9 @@
 Changelog
 =========
 
+- Bug: An image cannot be selected until Change Image is clicked #36
+- Bug: Image cropper not applying size selection to image blocks #37
+
 ## v0.2.4
 
 - Bug: Check metadata is an array before passing to `add_srcset_and_sizes()`
