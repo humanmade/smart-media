@@ -142,13 +142,13 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	if ( isset( $data['media_details']['sizes'] ) ) {
+		$full_size_thumb = $data['media_details']['sizes']['full']['source_url'];
 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
 			unset( $size['_tachyon_dynamic'] );
 
 			// Handle PDF thumbs.
 			if ( function_exists( 'tachyon_url' ) ) {
-				$full_size_thumb = $size['source_url'];
 				if ( $name === 'full' ) {
 					$size['source_url'] = tachyon_url( $full_size_thumb );
 				} else {
