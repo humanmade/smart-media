@@ -115,7 +115,7 @@ function enqueue_scripts( $hook = false ) {
 function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	$data = $response->get_data();
 
-	if ( is_wp_error( $data ) || ! is_object( $data ) || ! is_array( $data ) ) {
+	if ( is_wp_error( $data ) ) {
 		return $response;
 	}
 
@@ -124,35 +124,54 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	// Confirm it's definitely an image.
-	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) || $data['media_type'] !== 'image' ) {
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
 		return $response;
 	}
 
-	if ( isset( $data['source_url'] ) ) {
+	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
 		$data['source_url'] = tachyon_url( $data['source_url'] );
+
+		// Add focal point.
+		$focal_point = get_post_meta( $data['id'], '_focal_point', true );
+		if ( empty( $focal_point ) ) {
+			$data['focal_point'] = null;
+		} else {
+			$data['focal_point'] = (object) array_map( 'absint', $focal_point );
+		}
 	}
 
-	$focal_point = get_post_meta( $data['id'], '_focal_point', true );
-	if ( empty( $focal_point ) ) {
-		$data['focal_point'] = null;
-	} else {
-		$data['focal_point'] = (object) array_map( 'absint', $focal_point );
-	}
-
-	if ( isset( $data['media_details'] ) ) {
-		foreach ( array_keys( $data['media_details']['sizes'] ) as $size ) {
+	if ( isset( $data['media_details']['sizes'] ) ) {
+		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
-			unset( $data['media_details']['sizes'][ $size ]['_tachyon_dynamic'] );
-			// Add crop data.
-			if ( $size !== 'full' ) {
-				$data['media_details']['sizes'][ $size ]['crop'] = get_crop( $data['id'], $size );
+			unset( $size['_tachyon_dynamic'] );
+
+			// Handle PDF thumbs.
+			if ( function_exists( 'tachyon_url' ) ) {
+				$full_size_thumb = $size['source_url'];
+				if ( $name === 'full' ) {
+					$size['source_url'] = tachyon_url( $full_size_thumb );
+				} else {
+					$size['source_url'] = tachyon_url( $full_size_thumb, [
+						'resize' => sprintf( '%d,%d', $size['width'], $size['height'] ),
+					] );
+				}
 			}
-			// Correct full size image details.
-			if ( $size === 'full' ) {
-				$data['media_details']['sizes'][ $size ]['file'] = explode( '?', $data['media_details']['sizes'][ $size ]['file'] )[0];
-				$data['media_details']['sizes'][ $size ]['source_url'] = $data['source_url'];
+
+			// Handle image sizes.
+			if ( $data['media_type'] === 'image' ) {
+				// Add crop data.
+				if ( $name !== 'full' ) {
+					$size['crop'] = get_crop( $data['id'], $size );
+				}
+				// Correct full size image details.
+				if ( $name === 'full' ) {
+					$size['file'] = explode( '?', $size['file'] )[0];
+					$size['source_url'] = $data['source_url'];
+				}
 			}
+
+			$data['media_details']['sizes'][ $name ] = $size;
 		}
 	}
 
