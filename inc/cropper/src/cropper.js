@@ -217,7 +217,7 @@ Media.events.on( 'frame:select:init', frame => {
               );
 
               const attributesForAllBlocks = applyFilters(
-                `smartmedia.cropper.updateBlockAttributesOnSelect`,
+                'smartmedia.cropper.updateBlockAttributesOnSelect',
                 attributesByBlock,
                 selectedBlock,
                 image,

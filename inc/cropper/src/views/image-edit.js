@@ -42,7 +42,7 @@ const ImageEditView = Media.View.extend( {
 		);
 
 		const size = applyFilters(
-			`smartmedia.cropper.selectSizeFromBlockAttributes`,
+			'smartmedia.cropper.selectSizeFromBlockAttributes',
 			sizeForBlock,
 			selectedBlock
 		);
