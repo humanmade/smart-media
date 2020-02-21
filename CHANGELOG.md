@@ -1,8 +1,12 @@
 Changelog
 =========
 
+## v0.2.5
+
+- Change: Remove default WP large image sizes 1536x1536 and 2048x2048 in favour of Tachyon zoom srcset
 - Bug: An image cannot be selected until Change Image is clicked #36
 - Bug: Image cropper not applying size selection to image blocks #37
+- Bug: Ensure attachment ID in `image_downsize` filter is int
 
 ## v0.2.4
 
