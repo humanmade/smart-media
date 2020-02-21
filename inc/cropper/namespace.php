@@ -75,6 +75,10 @@ function setup() {
 
 	// Calculate srcset based on zoom modifiers.
 	add_filter( 'wp_calculate_image_srcset', __NAMESPACE__ . '\\image_srcset', 10, 5 );
+
+	// Remove the core additional sizes 1536x1536 and 2048x2048 as we use Tachyon's zoom.
+	remove_image_size( '1536x1536' );
+	remove_image_size( '2048x2048' );
 }
 
 /**
