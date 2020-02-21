@@ -6,14 +6,14 @@
 			<div class="thumbnail thumbnail-{{ data.type }}">
 				<# if ( data.uploading ) { #>
 					<div class="media-progress-bar"><div></div></div>
-				<# } else if ( -1 === jQuery.inArray( data.type, [ 'audio', 'video' ] ) ) { #>
-					<img class="details-image icon" src="{{ data.icon }}" draggable="false" alt="" />
 				<# } else if ( data.type === 'pdf' ) { #>
 					<# if ( data.sizes && data.sizes.full ) { #>
 						<img class="details-image icon" src="{{ data.sizes.full.url }}" draggable="false" alt="" />
 					<# } else { #>
 						<img class="details-image icon" src="{{ data.icon }}" draggable="false" alt="" />
 					<# } #>
+				<# } else if ( -1 === jQuery.inArray( data.type, [ 'audio', 'video' ] ) ) { #>
+					<img class="details-image icon" src="{{ data.icon }}" draggable="false" alt="" />
 				<# } #>
 
 				<# if ( 'audio' === data.type ) { #>
