@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v0.2.6
+
+- Bug: Fatal error on requesting PDF via REST API
+- Bug: PDF thumbnails not using Tachyon
+- Bug: Media modal showing incorrect URL for PDF preview
+
 ## v0.2.5
 
 - Change: Remove default WP large image sizes 1536x1536 and 2048x2048 in favour of Tachyon zoom srcset
