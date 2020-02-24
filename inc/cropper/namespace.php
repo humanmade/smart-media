@@ -141,7 +141,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		}
 	}
 
-	if ( is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
+	if ( isset( $data['media_details'] ) && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
 		$full_size_thumb = $data['media_details']['sizes']['full']['source_url'];
 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
