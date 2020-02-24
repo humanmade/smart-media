@@ -124,7 +124,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	// Confirm it's definitely an image.
-	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) || ! is_array( $data['media_details'] ) ) {
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
 		return $response;
 	}
 
@@ -141,7 +141,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		}
 	}
 
-	if ( isset( $data['media_details']['sizes'] ) ) {
+	if ( is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
 		$full_size_thumb = $data['media_details']['sizes']['full']['source_url'];
 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
