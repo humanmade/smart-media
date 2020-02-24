@@ -124,7 +124,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	// Confirm it's definitely an image.
-	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) || ! is_array( $data['media_details'] ) ) {
 		return $response;
 	}
 
@@ -162,7 +162,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 			if ( $data['media_type'] === 'image' ) {
 				// Add crop data.
 				if ( $name !== 'full' ) {
-					$size['crop'] = get_crop( $data['id'], $size );
+					$size['crop'] = get_crop( $data['id'], $name );
 				}
 				// Correct full size image details.
 				if ( $name === 'full' ) {
