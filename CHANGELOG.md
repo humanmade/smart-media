@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.7
+
+- Bug: Fix error when `media_details` is empty in REST response
+
 ## v0.2.6
 
 - Bug: Fatal error on requesting PDF via REST API
