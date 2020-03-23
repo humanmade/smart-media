@@ -338,6 +338,18 @@ function attachment_js( $response, $attachment ) {
 	// Fill intermediate sizes array.
 	$sizes = get_image_sizes();
 
+	if ( isset( $response['sizes']['full'] ) ) {
+		$full_size_attrs = $response['sizes']['full'];
+
+		// Fill the full size manually as the Media Library needs this size.
+		$sizes['full'] = [
+			'width'       => $full_size_attrs['width'],
+			'height'      => $full_size_attrs['height'],
+			'crop'        => false,
+			'orientation' => $full_size_attrs['width'] >= $full_size_attrs['height'] ? 'landscape' : 'portrait'
+		];
+	}
+
 	$size_labels = apply_filters( 'image_size_names_choose', [
 		'thumbnail' => __( 'Thumbnail' ),
 		'medium'    => __( 'Medium' ),
