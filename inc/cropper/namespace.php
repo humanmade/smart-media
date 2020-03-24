@@ -142,8 +142,8 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	if ( isset( $data['media_details'] ) && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
-		$full_size_thumb = $data['media_details']['sizes']['full']['source_url'];
-		foreach ( $data['media_details']['sizes'] as $name => $size ) {
+		$full_size_thumb = $data['original_url'] ?? $data['media_details']['sizes']['full']['source_url'];
+ 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
 			unset( $size['_tachyon_dynamic'] );
 
@@ -337,6 +337,18 @@ function attachment_js( $response, $attachment ) {
 
 	// Fill intermediate sizes array.
 	$sizes = get_image_sizes();
+
+	if ( isset( $response['sizes']['full'] ) ) {
+		$full_size_attrs = $response['sizes']['full'];
+
+		// Fill the full size manually as the Media Library needs this size.
+		$sizes['full'] = [
+			'width'       => $full_size_attrs['width'],
+			'height'      => $full_size_attrs['height'],
+			'crop'        => false,
+			'orientation' => $full_size_attrs['width'] >= $full_size_attrs['height'] ? 'landscape' : 'portrait'
+		];
+	}
 
 	$size_labels = apply_filters( 'image_size_names_choose', [
 		'thumbnail' => __( 'Thumbnail' ),
