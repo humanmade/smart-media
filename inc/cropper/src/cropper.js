@@ -95,7 +95,7 @@ Media.events.on( 'frame:init', () => {
 Media.events.on( 'frame:select:init', frame => {
 
   // Don't do any unnecessary work.
-  if ( ! frame.states.get( 'library' ) ) {
+  if ( ! frame.states.get( 'library' ) && ! frame.state( 'featured-image' ) ) {
     return;
   }
   if ( frame.states.get( 'edit' ) ) {
@@ -107,7 +107,21 @@ Media.events.on( 'frame:select:init', frame => {
     return;
   }
 
-  const libraryState = frame.state( 'library' );
+  let libraryState = null;
+
+  // The main state of the frame can either be "library" or "featured-image". Gutenberg's feature image
+  // component will construct a new frame that is "featured-image" which is a subclass of MediaFrame.Select.
+  // It's mostly the same as the MediaFrame.Select, but it has a main state with ID "featured-image", not
+  // "library". We have to get the state with the correct name, and things are _mostly_ the same.
+  //
+  // The reason we need to the state object is that our "edit" state will take the "selection" and "library"
+  // models from the current frame's state. As we essentially want to replace the state of the frame with the
+  // same connected models.
+  if ( frame.state( 'featured-image' ) && frame.state( 'featured-image' ).get( 'selection' ) ) {
+    libraryState = frame.state( 'featured-image' );
+  } else {
+    libraryState = frame.state( 'library' );
+  }
 
   // Create new editing state.
   const editState = frame.states.add( {
@@ -116,8 +130,8 @@ Media.events.on( 'frame:select:init', frame => {
     router: false,
     menu: false,
     uploader: false,
-    selection: frame.state( 'library' ).get( 'selection' ),
-    library: frame.state( 'library' ).get( 'library' ),
+    selection: libraryState.get( 'selection' ),
+    library: libraryState.get( 'library' ),
   } );
 
   // Set region modes when entering and leaving edit state.
@@ -167,7 +181,7 @@ Media.events.on( 'frame:select:init', frame => {
           style: 'primary',
           text: __( 'Select', 'hm-smart-media' ),
           click: () => {
-            const { close, event, reset, state } = Object.assign( frame.options.mutableButton || frame.options.button, {
+            const { close, event, reset, state } = Object.assign( frame.options.mutableButton || frame.options.button || {}, {
               event: 'select',
               close: true,
             } );
@@ -252,7 +266,18 @@ Media.events.on( 'frame:select:init', frame => {
     }
 
     // Switch to edit mode.
-    frame.setState( 'edit' );
+    //
+    // frame.setState() will not call the "activate" event on our "edit" state if it
+    // is already set as the current state. Unfortunately, being set as the current state
+    // on the frame, does not necessarily mean the correct state is rendered. As the default media
+    // frame and states are overwriting our shimmed-in "edit" state, we have to do this
+    // workaround to re-set render by calling the "activate" event even if the current state is
+    // "edit".
+    if ( frame.state().id === 'edit' ) {
+      frame.state().trigger('activate');
+    } else {
+      frame.setState( 'edit' );
+    }
 
     // Set sidebar views.
     sidebar.set( 'details', new Media.view.Attachment.Details( {
