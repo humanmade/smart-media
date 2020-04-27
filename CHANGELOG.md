@@ -1,10 +1,15 @@
 Changelog
 =========
 
+## v0.2.9
+
+- Bug: Fix crop position in post featured images #52
+- Bug: Fix cropper showing on Featured Media Gutenberg popup #51
+
 ## v0.2.8
 
 - Bug: Fix image size selector in Image Block wasn't selecting the correct size and switching between sizes wasn't causing any resize in the block.
- 
+
 ## v0.2.7
 
 - Bug: Fix error when `media_details` is empty in REST response
