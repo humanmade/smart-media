@@ -192,11 +192,14 @@ function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 	}
 
 	// The value we're picking up can be filtered and upstream bugs introduced, this will avoid fatal errors.
-	if ( ! is_int( $downsize_args['attachment_id'] ) ) {
+	// We have to check if value is "numeric" (int or string with a number) as in < WordPress 5.3
+	// get_post_thumbnail_id() returns a string.
+	if ( ! is_numeric( $downsize_args['attachment_id'] ) ) {
 		return $tachyon_args;
 	}
 
-	$crop = get_crop( $downsize_args['attachment_id'], $downsize_args['size'] );
+	$attachment_id = (int) $downsize_args['attachment_id'];
+	$crop = get_crop( $attachment_id, $downsize_args['size'] );
 
 	if ( $crop ) {
 		$tachyon_args['crop'] = sprintf( '%dpx,%dpx,%dpx,%dpx', $crop['x'], $crop['y'], $crop['width'], $crop['height'] );
