@@ -989,9 +989,18 @@ function get_image_size_modifiers( ?int $attachment_id = null ) : array {
 	 * the srcset will contain a 2x, 1.5x, 0.5x and 0.25x version of the image.
 	 *
 	 * @param array $modifiers The zoom values for the srcset.
-	 * @param int? $attachment_id The attachment ID or null.
+	 * @param int|null $attachment_id The attachment ID or null.
 	 */
-	return apply_filters( 'hm.smart-media.image-size-modifiers', [ 2, 1.5, 0.5, 0.25 ], $attachment_id );
+	$modifiers = apply_filters( 'hm.smart-media.image-size-modifiers', [ 2, 1.5, 0.5, 0.25 ], $attachment_id );
+
+	// Ensure original size is part of srcset as some browsers won't use original
+	// size if any srcset values are present.
+	$modifiers[] = 1;
+	$modifiers = array_unique( $modifiers );
+
+	// Sort from highest to lowest.
+	rsort( $modifiers );
+	return $modifiers;
 }
 
 /**
@@ -1036,6 +1045,11 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	foreach ( $modifiers as $modifier ) {
 		$target_width = round( $width * $modifier );
 
+		// Do not append a srcset size larger than the original.
+		if ( $target_width > $image_meta['width'] ) {
+			continue;
+		}
+
 		// Apply zoom to the image to get automatic quality adjustment.
 		$zoomed_image_url = add_query_arg( [
 			'w' => false,
@@ -1051,6 +1065,9 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 			'value' => $target_width,
 		];
 	}
+
+	// Sort by keys largest to smallest.
+	krsort( $sources );
 
 	return $sources;
 }

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.2.10
+
+- Bug: Ensure `srcset` sizes are never larger than the original
+- Bug: Ensure originally requested size (or as close to) is represented in `srcset`
+
 ## v0.2.9
 
 - Bug: Fix crop position in post featured images #52
