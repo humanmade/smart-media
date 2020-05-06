@@ -389,7 +389,7 @@ function attachment_js( $response, $attachment ) {
  * @return array
  */
 function attachment_thumbs( $response ) : array {
-	if ( ! function_exists( 'tachyon_url' ) || ! is_array( $response ) || ! Tachyon::validate_image_url( $response['url'] ) ) {
+	if ( ! method_exists( 'Tachyon', 'validate_image_url' ) || ! is_array( $response ) || ! Tachyon::validate_image_url( $response['url'] ) ) {
 		return $response;
 	}
 
