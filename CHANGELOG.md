@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.12
+
+- Bug: Fix SVG preview display in media modal
+
 ## v0.2.11
 
 - Bug: Tachyon no longer processes SVGs, they stopped displaying properly in the media modal as a result
