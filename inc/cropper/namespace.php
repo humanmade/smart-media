@@ -333,7 +333,7 @@ function attachment_js( $response, $attachment ) {
 	}
 
 	// Add base Tachyon URL.
-	if ( function_exists( 'tachyon_url' ) ) {
+	if ( method_exists( 'Tachyon', 'validate_image_url' ) && Tachyon::validate_image_url( $response['url'] ) ) {
 		$response['original_url'] = $response['url'];
 		$response['url'] = tachyon_url( $response['url'] );
 	}
@@ -389,7 +389,7 @@ function attachment_js( $response, $attachment ) {
  * @return array
  */
 function attachment_thumbs( $response ) : array {
-	if ( ! function_exists( 'tachyon_url' ) || ! is_array( $response ) ) {
+	if ( ! method_exists( 'Tachyon', 'validate_image_url' ) || ! is_array( $response ) || ! Tachyon::validate_image_url( $response['url'] ) ) {
 		return $response;
 	}
 
