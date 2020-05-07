@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.11
+
+- Bug: Tachyon no longer processes SVGs, they stopped displaying properly in the media modal as a result
+
 ## v0.2.10
 
 - Bug: Ensure `srcset` sizes are never larger than the original
