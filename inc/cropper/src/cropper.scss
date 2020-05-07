@@ -112,6 +112,9 @@
 				margin-bottom: 0;
 				font-size: 16px;
 			}
+			button::before {
+				margin-left: 8px;
+			}
 		}
 
 		&__image-wrap {
@@ -126,12 +129,20 @@
 				position: relative;
 			}
 
+			&--preview {
+				float: none;
+			}
+
 			img {
 				display: block;
 				max-width: 100%;
 				max-height: 500px;
 				width: auto;
 				height: auto;
+			}
+
+			img[src$=".svg"] {
+				width: 100%;
 			}
 
 			.image-preview-full {

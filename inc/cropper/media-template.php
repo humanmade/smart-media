@@ -272,7 +272,7 @@
 
 <script type="text/html" id="tmpl-hm-thumbnail-preview">
 	<div class="hm-thumbnail-editor__image-wrap">
-		<div class="hm-thumbnail-editor__image">
+		<div class="hm-thumbnail-editor__image hm-thumbnail-editor__image--preview">
 			<# if ( data.model.get( 'sizes' ) ) { #>
 				<img
 					class="image-preview"
