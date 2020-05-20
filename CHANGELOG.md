@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.2.13
+
+- Bug: Compatibility issue with Google AMP plugin
+- Bug: Selecting a featured image on an auto draft / new post page could fail to trigger the select event
+
 ## v0.2.12
 
 - Bug: Fix SVG preview display in media modal
