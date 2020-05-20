@@ -190,8 +190,16 @@ Media.events.on( 'frame:select:init', frame => {
               frame.close();
             }
 
+            // Trigger the event on the current state if available, falling
+            // back to last state and finally the frame.
             if ( event ) {
-              frame.state().trigger( event || 'select' );
+              if ( frame.state()._events[ event ] ) {
+                frame.state().trigger( event );
+              } else if ( frame.lastState()._events[ event ] ) {
+                frame.lastState().trigger( event );
+              } else {
+                frame.trigger( event );
+              }
             }
 
             if ( state ) {
