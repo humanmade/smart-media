@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.14
+
+- Bug: Deselect blocks on focus inside metabox area, prevents updating blocks on image selection outside editor
+
 ## v0.2.13
 
 - Bug: Compatibility issue with Google AMP plugin
