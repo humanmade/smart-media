@@ -1,0 +1,100 @@
+# Copyright (C) 2019 Human Made Limited
+# This file is distributed under the same license as the Smart Media plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Smart Media 0.2.2\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/smart-media\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2019-10-30T18:17:57+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.4.0-alpha\n"
+"X-Domain: hm-smart-media\n"
+
+#. Plugin Name of the plugin
+msgid "Smart Media"
+msgstr ""
+
+#. Description of the plugin
+msgid "Advanced media tools that take advantage of Rekognition and Tachyon."
+msgstr ""
+
+#. Author of the plugin
+msgid "Human Made Limited"
+msgstr ""
+
+#: inc/cropper/media-template.php:159
+msgid "Image sizes"
+msgstr ""
+
+#: inc/cropper/media-template.php:194
+msgid "Edit original image"
+msgstr ""
+
+#: inc/cropper/media-template.php:196
+msgid "Edit crop"
+msgstr ""
+
+#: inc/cropper/media-template.php:224
+msgid "Click anywhere on the image to set a focal point for automatic cropping."
+msgstr ""
+
+#: inc/cropper/media-template.php:232
+msgid "Apply changes"
+msgstr ""
+
+#: inc/cropper/media-template.php:233
+msgid "Reset"
+msgstr ""
+
+#: inc/cropper/media-template.php:235
+msgid "The crop was set automatically, to override it click and drag on the image then use the crop button."
+msgstr ""
+
+#: inc/cropper/media-template.php:237
+msgid "Remove custom crop"
+msgstr ""
+
+#: inc/cropper/media-template.php:254
+msgid "Click to remove focal point"
+msgstr ""
+
+#: inc/cropper/namespace.php:322
+msgid "Invalid thumbnail size received"
+msgstr ""
+
+#: inc/cropper/namespace.php:329
+msgid "No cropping data received"
+msgstr ""
+
+#: inc/cropper/namespace.php:353
+msgid "No focal point data received"
+msgstr ""
+
+#. translators: %s is replaced by the text 'id' referring to the parameter name.
+#: inc/cropper/namespace.php:387
+msgid "Invalid %s parameter."
+msgstr ""
+
+#: inc/cropper/namespace.php:391
+msgid "That is not a valid image attachment."
+msgstr ""
+
+#: inc/cropper/namespace.php:395
+msgid "You are not allowed to edit this attachment."
+msgstr ""
+
+#: inc/cropper/src/cropper.js:89
+msgid "Edit image"
+msgstr ""
+
+#: inc/cropper/src/cropper.js:133
+msgid "Change image"
+msgstr ""
+
+#: inc/cropper/src/cropper.js:142
+msgid "Select"
+msgstr ""
