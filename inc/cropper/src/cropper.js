@@ -31,6 +31,27 @@ addFilter(
   }
 );
 
+// Ensure blocks are deselected when focusing or clicking into the meta boxes.
+if ( wp && wp.data && window._wpLoadBlockEditor ) {
+  // Wait for editor to load.
+  window._wpLoadBlockEditor.then( () => {
+    // Ensure this is an editor page.
+    const editor = document.querySelector( '.block-editor' );
+    if ( ! editor ) {
+      return;
+    }
+    // Callback to deselect current block.
+    function deselectBlocks( event ) {
+      if ( ! event.target.closest( '.edit-post-meta-boxes-area' ) ) {
+        return;
+      }
+      wp.data.dispatch( 'core/block-editor' ).clearSelectedBlock();
+    };
+    editor.addEventListener( 'focusin', deselectBlocks );
+  } );
+}
+
+
 // Create a high level event we can hook into for media frame creation.
 const MediaFrame = Media.view.MediaFrame;
 
@@ -282,7 +303,7 @@ Media.events.on( 'frame:select:init', frame => {
     // workaround to re-set render by calling the "activate" event even if the current state is
     // "edit".
     if ( frame.state().id === 'edit' ) {
-      frame.state().trigger('activate');
+      frame.state().trigger( 'activate' );
     } else {
       frame.setState( 'edit' );
     }
