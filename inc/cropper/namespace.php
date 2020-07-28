@@ -879,6 +879,13 @@ function make_content_images_responsive( string $content ) : string {
 
 	foreach ( $selected_images as $image => $image_data ) {
 		$attachment_id = $image_data['id'];
+		// The ID returned here may not always be an image, eg. if the attachment 
+		// has been deleted but is still referenced in the content or if the content
+		// has been migrated and the attachment IDs no longer correlate to the right 
+		// post table entries.
+		if ( ! wp_attachment_is_image( $attachment_id ) ) {
+			continue;
+		}
 		$image_meta = wp_get_attachment_metadata( $attachment_id );
 		if ( $image_meta && is_array( $image_meta ) ) {
 			$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
