@@ -43,6 +43,7 @@ function setup() {
 	 */
 	add_filter( 'tachyon_pre_args', __NAMESPACE__ . '\\tachyon_args' );
 	add_filter( 'tachyon_disable_in_admin', '__return_false' );
+	add_filter( 'tachyon_remove_size_attributes', '__return_false' );
 	if ( class_exists( 'Tachyon' ) ) {
 		remove_filter( 'rest_request_before_callbacks', [ Tachyon::instance(), 'should_rest_image_downsize' ], 10, 3 );
 	}
