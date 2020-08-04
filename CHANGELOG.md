@@ -1,6 +1,8 @@
 Changelog
 =========
 
+## v0.2.15
+
 - Bug: Fixed fatal error uploading video and audio blocks. #71
 
 ## v0.2.14
