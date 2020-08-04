@@ -141,7 +141,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		}
 	}
 
-	if ( isset( $data['media_details'] ) && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
+	if ( isset( $data['media_details'] ) && $data['media_type'] === 'image' && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
 		$full_size_thumb = $data['original_url'] ?? $data['media_details']['sizes']['full']['source_url'];
  		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
@@ -879,9 +879,9 @@ function make_content_images_responsive( string $content ) : string {
 
 	foreach ( $selected_images as $image => $image_data ) {
 		$attachment_id = $image_data['id'];
-		// The ID returned here may not always be an image, eg. if the attachment 
+		// The ID returned here may not always be an image, eg. if the attachment
 		// has been deleted but is still referenced in the content or if the content
-		// has been migrated and the attachment IDs no longer correlate to the right 
+		// has been migrated and the attachment IDs no longer correlate to the right
 		// post table entries.
 		if ( ! wp_attachment_is_image( $attachment_id ) ) {
 			continue;
