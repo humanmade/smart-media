@@ -1,6 +1,8 @@
 Changelog
 =========
 
+- Bug: Fixed fatal error uploading video and audio blocks. #71
+
 ## v0.2.14
 
 - Bug: Deselect blocks on focus inside metabox area, prevents updating blocks on image selection outside editor
