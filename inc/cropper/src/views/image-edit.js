@@ -20,7 +20,7 @@ const ImageEditView = Media.View.extend( {
 		this.setSizeFromBlock();
 
 		// Re-render on certain updates.
-		this.listenTo( this.model, 'change:url', this.onUpdate );
+		this.listenTo( this.model, 'change:id', this.onUpdate );
 
 		// Initial render.
 		this.onUpdate();
@@ -87,7 +87,6 @@ const ImageEditView = Media.View.extend( {
 
 ImageEditView.load = controller => new ImageEditView( {
 	controller: controller,
-	model: controller.model,
 	el: document.querySelector( '.media-image-edit' ),
 } );
 
