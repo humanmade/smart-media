@@ -68,132 +68,159 @@ Media.view.MediaFrame = MediaFrame.extend( {
 // Used on edit.php
 const MediaFrameSelect = Media.view.MediaFrame.Select;
 Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
+  idc: 0,
   initialize( options ) {
     MediaFrameSelect.prototype.initialize.apply( this, arguments );
 
-    const button = Object.assign( {}, options.button || {} );
+
+    // Reset the button as options are updated globally and causes some setup steps not to run.
+    this._button = Object.assign( {}, options.button || {} );
+    this.on( 'toolbar:create:select', this.onCreateToolbarSetButton, this );
+
+    // Add our image editor state.
+    this.createImageEditorState();
+
+    // Bind edit state views.
+    this.on( 'content:create:edit', this.onCreateImageEditorContent, this );
+    this.on( 'toolbar:create:edit', this.onCreateImageEditorToolbar, this );
+
+    const frame = this;
+    this.on( 'all', function () {
+      console.log( 'frame events', arguments, frame );
+    } );
 
     // Fire a high level init event.
     Media.events.trigger( 'frame:select:init', this );
+  },
+  onCreateToolbarSetButton: function () {
+    if ( this._button ) {
+      this.options.mutableButton = Object.assign( {}, this.options.button );
+      this.options.button = Object.assign( {}, this._button );
+    }
+  },
+  createImageEditorState: function () {
+    // Only single selection mode is supported.
+    if ( this.options.multiple ) {
+      return;
+    }
 
-    // Prevent previously hidden regions coming back.
-    this.on( 'activate', () => {
+    // If we already have the state it's safe to ignore.
+    if ( this.states.get( 'edit' ) ) {
+      return;
+    }
+
+    const libraryState = this.state( 'library' ) || this.state( 'featured-image' );
+    if ( ! libraryState || ! libraryState.get( 'selection' ) ) {
+      // Bind to and wait for a change to the state model for
+      // selection and run this function again.
+      libraryState.on( 'change', this.createImageEditorState, this );
+      return;
+    }
+
+    // Create new editing state.
+    const editState = this.states.add( {
+      id: 'edit',
+      title: __( 'Edit image', 'hm-smart-media' ),
+      router: false,
+      menu: false,
+      uploader: false,
+      library: libraryState.get( 'library' ),
+      selection: libraryState.get( 'selection' ),
+      display: libraryState.get( 'display' ),
+    } );
+
+    // Set region modes when entering and leaving edit state.
+    editState.on( 'activate', () => {
+      // Preserve settings from previous view.
       if ( this.$el.hasClass( 'hide-menu' ) && this.lastState() ) {
         this.lastState().set( 'menu', false );
       }
+      if ( this.$el.hasClass( 'hide-router' ) && this.lastState() ) {
+        this.lastState().set( 'router', false );
+      }
+
+      // Toggle edit mode on regions.
+      this.$el.toggleClass( 'mode-select mode-edit-image' );
+      this.content.mode( 'edit' );
+      this.toolbar.mode( 'edit' );
+    } );
+    editState.on( 'deactivate', () => {
+      this.$el.toggleClass( 'mode-select mode-edit-image' );
     } );
 
-    // Reset the button as options are updated globally and causes some setup steps not to run.
-    this.on( 'toolbar:create:select', () => {
-      if ( button ) {
-        this.options.mutableButton = Object.assign( {}, this.options.button );
-        this.options.button = Object.assign( {}, button );
+    // Handle selection events.
+    libraryState.get( 'selection' ).on( 'selection:single', () => {
+      const single = this.state( 'edit' ).get( 'selection' ).single();
+      if ( single.get( 'uploading' ) ) {
+        return;
       }
+
+      this.setState( 'edit' );
+    } );
+    libraryState.get( 'selection' ).on( 'selection:unsingle', () => {
+      this.setState( libraryState.id );
     } );
   },
-} );
+  onCreateImageEditorContent: function ( region ) {
+    const state = this.state( 'edit' );
+    const single = state.get( 'selection' ).single();
+    const sidebar = new Media.view.Sidebar( {
+      controller: this,
+    } );
 
-// Replace TwoColumn view.
-Media.events.on( 'frame:init', () => {
-  Media.view.Attachment.Details.TwoColumn = Media.view.Attachment.Details.TwoColumn.extend( {
-    template: template( 'hm-attachment-details-two-column' ),
-    initialize() {
-      Media.view.Attachment.Details.prototype.initialize.apply( this, arguments );
+    // Set sidebar views.
+    sidebar.set( 'details', new Media.view.Attachment.Details( {
+      controller: this,
+      model: single,
+      priority: 80
+    } ) );
 
-      // Update on URL change eg. edit.
-      this.listenTo( this.model, 'change:url', () => {
-        this.render();
-        ImageEditView.load( this.controller );
-      } );
+    sidebar.set( 'compat', new Media.view.AttachmentCompat( {
+      controller: this,
+      model: single,
+      priority: 120
+    } ) );
 
-      // Load ImageEditView when the frame is ready or refreshed.
-      this.controller.on( 'ready refresh', () => ImageEditView.load( this.controller ) );
+    const display = state.has( 'display' ) ? state.get( 'display' ) : state.get( 'displaySettings' );
+
+    if ( display ) {
+      sidebar.set( 'display', new Media.view.Settings.AttachmentDisplay( {
+        controller:   this,
+        model:        state.display( single ),
+        attachment:   single,
+        priority:     160,
+        userSettings: state.model.get( 'displayUserSettings' )
+      } ) );
     }
-  } );
-} );
 
-// Add edit state to MediaFrameSelect.
-Media.events.on( 'frame:select:init', frame => {
+    // Show the sidebar on mobile
+    if ( state.id === 'insert' ) {
+      sidebar.$el.addClass( 'visible' );
+    }
 
-  // Don't do any unnecessary work.
-  if ( ! frame.states.get( 'library' ) && ! frame.state( 'featured-image' ) ) {
-    return;
-  }
-  if ( frame.states.get( 'edit' ) ) {
-    return;
-  }
-
-  // Check we don't have the cropper state available, not yet compatible.
-  if ( frame.states.get( 'cropper' ) ) {
-    return;
-  }
-
-  let libraryState = null;
-
-  // The main state of the frame can either be "library" or "featured-image". Gutenberg's feature image
-  // component will construct a new frame that is "featured-image" which is a subclass of MediaFrame.Select.
-  // It's mostly the same as the MediaFrame.Select, but it has a main state with ID "featured-image", not
-  // "library". We have to get the state with the correct name, and things are _mostly_ the same.
-  //
-  // The reason we need to the state object is that our "edit" state will take the "selection" and "library"
-  // models from the current frame's state. As we essentially want to replace the state of the frame with the
-  // same connected models.
-  if ( frame.state( 'featured-image' ) && frame.state( 'featured-image' ).get( 'selection' ) ) {
-    libraryState = frame.state( 'featured-image' );
-  } else {
-    libraryState = frame.state( 'library' );
-  }
-
-  // Create new editing state.
-  const editState = frame.states.add( {
-    id: 'edit',
-    title: __( 'Edit image', 'hm-smart-media' ),
-    router: false,
-    menu: false,
-    uploader: false,
-    selection: libraryState.get( 'selection' ),
-    library: libraryState.get( 'library' ),
-  } );
-
-  // Set region modes when entering and leaving edit state.
-  editState.on( 'activate', () => {
-    frame.$el.toggleClass( 'mode-select mode-edit-image' );
-    frame.content.mode( 'edit' );
-    frame.toolbar.mode( 'edit' );
-  } );
-
-  editState.on( 'deactivate', () => {
-    frame.$el.toggleClass( 'mode-select mode-edit-image' );
-  } );
-
-  editState.sidebar = new Media.view.Sidebar( {
-    controller: frame,
-  } );
-
-  // Update the views for the regions in edit mode.
-  frame.on( 'content:create:edit', region => {
     region.view = [
       new ImageEditView( {
         tagName: 'div',
         className: 'media-image-edit',
-        controller: frame,
-        model: frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection || frame._selection.single ),
+        controller: this,
+        model: single,
       } ),
-      editState.sidebar,
+      sidebar,
     ];
-  } );
-
-  frame.on( 'toolbar:create:edit', region => {
+  },
+  onCreateImageEditorToolbar: function ( region ) {
     region.view = new Media.view.Toolbar( {
-      controller: frame,
+      controller: this,
       requires: { selection: true },
       reset: false,
       event: 'select',
       items: {
         change: {
           text: __( 'Change image', 'hm-smart-media' ),
-          click() {
-            frame.setState( frame.lastState() );
+          click: () => {
+            // Remove the current selection.
+            this.state( 'edit' ).get( 'selection' ).reset( [] );
+            // this.setState( libraryState.id );
           },
           priority: 20,
           requires: { selection: true },
@@ -202,33 +229,33 @@ Media.events.on( 'frame:select:init', frame => {
           style: 'primary',
           text: __( 'Select', 'hm-smart-media' ),
           click: () => {
-            const { close, event, reset, state } = Object.assign( frame.options.mutableButton || frame.options.button || {}, {
+            const { close, event, reset, state } = Object.assign( this.options.mutableButton || this.options.button || {}, {
               event: 'select',
               close: true,
             } );
 
             if ( close ) {
-              frame.close();
+              this.close();
             }
 
             // Trigger the event on the current state if available, falling
             // back to last state and finally the frame.
             if ( event ) {
-              if ( frame.state()._events[ event ] ) {
-                frame.state().trigger( event );
-              } else if ( frame.lastState()._events[ event ] ) {
-                frame.lastState().trigger( event );
+              if ( this.state()._events[ event ] ) {
+                this.state().trigger( event );
+              } else if ( this.lastState()._events[ event ] ) {
+                this.lastState().trigger( event );
               } else {
-                frame.trigger( event );
+                this.trigger( event );
               }
             }
 
             if ( state ) {
-              frame.setState( state );
+              this.setState( state );
             }
 
             if ( reset ) {
-              frame.reset();
+              this.reset();
             }
 
             // Update current block if we can map the attachment to attributes.
@@ -239,7 +266,7 @@ Media.events.on( 'frame:select:init', frame => {
               }
 
               // Get the attachment data and selected image size data.
-              const attachment = frame.state( 'edit' ).get( 'selection' ).first() || ( frame._selection && frame._selection.single );
+              const attachment = this.state( 'edit' ).get( 'selection' ).single();
 
               if ( ! attachment ) {
                 return;
@@ -282,65 +309,24 @@ Media.events.on( 'frame:select:init', frame => {
         },
       },
     } );
-  } );
+  }
+} );
 
-  // Switch state on selection of a new single image.
-  editState.get( 'selection' ).on( 'selection:single', function () {
-    const { sidebar } = editState;
-    const single = editState.get( 'selection' ).single();
+// Replace TwoColumn view.
+Media.events.on( 'frame:init', () => {
+  Media.view.Attachment.Details.TwoColumn = Media.view.Attachment.Details.TwoColumn.extend( {
+    template: template( 'hm-attachment-details-two-column' ),
+    initialize() {
+      Media.view.Attachment.Details.prototype.initialize.apply( this, arguments );
 
-    // Check we're not still uploading.
-    if ( single.get( 'uploading' ) ) {
-      return;
-    }
+      // Update on URL change eg. edit.
+      this.listenTo( this.model, 'change:id', () => {
+        this.render();
+        ImageEditView.load( this.controller, this.model );
+      } );
 
-    // Switch to edit mode.
-    //
-    // frame.setState() will not call the "activate" event on our "edit" state if it
-    // is already set as the current state. Unfortunately, being set as the current state
-    // on the frame, does not necessarily mean the correct state is rendered. As the default media
-    // frame and states are overwriting our shimmed-in "edit" state, we have to do this
-    // workaround to re-set render by calling the "activate" event even if the current state is
-    // "edit".
-    if ( frame.state().id === 'edit' ) {
-      frame.state().trigger( 'activate' );
-    } else {
-      frame.setState( 'edit' );
-    }
-
-    // Set sidebar views.
-    sidebar.set( 'details', new Media.view.Attachment.Details( {
-      controller: frame,
-      model: single,
-      priority: 80
-    } ) );
-
-    sidebar.set( 'compat', new Media.view.AttachmentCompat( {
-      controller: frame,
-      model: single,
-      priority: 120
-    } ) );
-
-    const display = libraryState.has( 'display' ) ? libraryState.get( 'display' ) : libraryState.get( 'displaySettings' );
-
-    if ( display ) {
-      sidebar.set( 'display', new Media.view.Settings.AttachmentDisplay( {
-        controller:   frame,
-        model:        this.model.display( single ),
-        attachment:   single,
-        priority:     160,
-        userSettings: this.model.get( 'displayUserSettings' )
-      } ) );
-    }
-
-    // Show the sidebar on mobile
-    if ( this.model.id === 'insert' ) {
-      sidebar.$el.addClass( 'visible' );
+      // Load ImageEditView when the frame is ready or refreshed.
+      this.controller.on( 'ready refresh', () => ImageEditView.load( this.controller, this.model ) );
     }
   } );
-
-  editState.get( 'selection' ).on( 'selection:unsingle', function () {
-    frame.setState( 'library' );
-  } );
-
 } );
