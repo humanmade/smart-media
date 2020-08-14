@@ -68,10 +68,8 @@ Media.view.MediaFrame = MediaFrame.extend( {
 // Used on edit.php
 const MediaFrameSelect = Media.view.MediaFrame.Select;
 Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
-  idc: 0,
   initialize( options ) {
     MediaFrameSelect.prototype.initialize.apply( this, arguments );
-
 
     // Reset the button as options are updated globally and causes some setup steps not to run.
     this._button = Object.assign( {}, options.button || {} );
@@ -79,15 +77,11 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
 
     // Add our image editor state.
     this.createImageEditorState();
+    this.on( 'ready', this.createImageEditorState, this );
 
     // Bind edit state views.
     this.on( 'content:create:edit', this.onCreateImageEditorContent, this );
     this.on( 'toolbar:create:edit', this.onCreateImageEditorToolbar, this );
-
-    const frame = this;
-    this.on( 'all', function () {
-      console.log( 'frame events', arguments, frame );
-    } );
 
     // Fire a high level init event.
     Media.events.trigger( 'frame:select:init', this );
@@ -109,13 +103,15 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       return;
     }
 
-    const libraryState = this.state( 'library' ) || this.state( 'featured-image' );
+    const libraryState = this.states.get( 'library' ) || this.states.get( 'featured-image' );
     if ( ! libraryState || ! libraryState.get( 'selection' ) ) {
-      // Bind to and wait for a change to the state model for
-      // selection and run this function again.
-      libraryState.on( 'change', this.createImageEditorState, this );
       return;
     }
+
+    const isFeaturedImage = libraryState.id === 'featured-image';
+
+    // Hide the toolbar for the library mode.
+    this.$el.addClass( 'hide-toolbar' );
 
     // Create new editing state.
     const editState = this.states.add( {
@@ -135,17 +131,16 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       if ( this.$el.hasClass( 'hide-menu' ) && this.lastState() ) {
         this.lastState().set( 'menu', false );
       }
-      if ( this.$el.hasClass( 'hide-router' ) && this.lastState() ) {
-        this.lastState().set( 'router', false );
-      }
 
       // Toggle edit mode on regions.
-      this.$el.toggleClass( 'mode-select mode-edit-image' );
+      this.$el.addClass( 'mode-select mode-edit-image' );
+      this.$el.removeClass( 'hide-toolbar' );
       this.content.mode( 'edit' );
       this.toolbar.mode( 'edit' );
     } );
     editState.on( 'deactivate', () => {
-      this.$el.toggleClass( 'mode-select mode-edit-image' );
+      this.$el.removeClass( 'mode-select mode-edit-image' );
+      this.$el.addClass( 'hide-toolbar' );
     } );
 
     // Handle selection events.
@@ -155,9 +150,21 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
         return;
       }
 
+      // Update the placeholder the featured image frame uses to set its
+      // default selection from.
+      if ( isFeaturedImage ) {
+        wp.media.view.settings.post.featuredImageId = single.get( 'id' );
+      }
+
       this.setState( 'edit' );
     } );
     libraryState.get( 'selection' ).on( 'selection:unsingle', () => {
+      // Update the placeholder the featured image frame uses to set its
+      // default selection from.
+      if ( isFeaturedImage ) {
+        wp.media.view.settings.post.featuredImageId = -1;
+      }
+
       this.setState( libraryState.id );
     } );
   },
@@ -320,13 +327,13 @@ Media.events.on( 'frame:init', () => {
       Media.view.Attachment.Details.prototype.initialize.apply( this, arguments );
 
       // Update on URL change eg. edit.
-      this.listenTo( this.model, 'change:id', () => {
+      this.listenTo( this.model, 'change:url', () => {
         this.render();
-        ImageEditView.load( this.controller, this.model );
+        ImageEditView.load( this.controller );
       } );
 
       // Load ImageEditView when the frame is ready or refreshed.
-      this.controller.on( 'ready refresh', () => ImageEditView.load( this.controller, this.model ) );
+      this.controller.on( 'ready refresh', () => ImageEditView.load( this.controller ) );
     }
   } );
 } );
