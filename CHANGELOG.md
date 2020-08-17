@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.16
+
+- Bug: Fixed featured image "Replace Image" button behaviour #76
+
 ## v0.2.15
 
 - Bug: Fixed fatal error uploading video and audio blocks. #71

@@ -85,7 +85,7 @@ const ImageEditView = Media.View.extend( {
 	},
 } );
 
-ImageEditView.load = controller => new ImageEditView( {
+ImageEditView.load = ( controller ) => new ImageEditView( {
 	controller: controller,
 	model: controller.model,
 	el: document.querySelector( '.media-image-edit' ),
