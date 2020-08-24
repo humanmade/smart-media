@@ -35,6 +35,11 @@ const ImageEditor = Media.View.extend( {
 		}
 	},
 	loadEditor() {
+		// Remove any existing cropper.
+		if ( this.cropper ) {
+			this.cropper.setOptions( { remove: true } );
+		}
+
 		this.render();
 
 		const size = this.model.get( 'size' );
@@ -96,7 +101,7 @@ const ImageEditor = Media.View.extend( {
 					height: cropHeight,
 				} );
 			} else {
-				const image = $( 'img[id^="image-preview-"]' ).get( 0 );
+				const image = this.$el.find( 'img[id^="image-preview-"]' ).get( 0 );
 				smartcrop
 					.crop( image, {
 						width: size.width,
@@ -160,17 +165,17 @@ const ImageEditor = Media.View.extend( {
 		this.cropper.update();
 	},
 	onSelectStart() {
-		$( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
 	},
 	onSelectEnd() {
-		$( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
 	},
 	onSelectChange() {
-		$( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
 	},
 	initCropper() {
 		const view     = this;
-		const $image   = $( 'img[id^="image-preview-"]' );
+		const $image   = this.$el.find( 'img[id^="image-preview-"]' );
 		const $parent  = $image.parent();
 		const sizeName = this.model.get( 'size' );
 		const sizes    = this.model.get( 'sizes' );
