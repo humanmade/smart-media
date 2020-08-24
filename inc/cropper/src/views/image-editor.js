@@ -35,6 +35,11 @@ const ImageEditor = Media.View.extend( {
 		}
 	},
 	loadEditor() {
+		// Remove any existing cropper.
+		if ( this.cropper ) {
+			this.cropper.setOptions( { remove: true } );
+		}
+
 		this.render();
 
 		const size = this.model.get( 'size' );
@@ -96,7 +101,7 @@ const ImageEditor = Media.View.extend( {
 					height: cropHeight,
 				} );
 			} else {
-				const image = $( 'img[id^="image-preview-"]' ).get( 0 );
+				const image = this.$el.find( 'img[id^="image-preview-"]' ).get( 0 );
 				smartcrop
 					.crop( image, {
 						width: size.width,
@@ -116,6 +121,11 @@ const ImageEditor = Media.View.extend( {
 		// Disable buttons.
 		this.onSelectStart();
 
+		// Disable the cropper.
+		if ( this.cropper ) {
+			this.cropper.setOptions( { disable: true } );
+		}
+
 		// Send AJAX request to save the crop coordinates.
 		ajax.post( 'hm_save_crop', {
 			_ajax_nonce: this.model.get( 'nonces' ).edit,
@@ -128,9 +138,12 @@ const ImageEditor = Media.View.extend( {
 			},
 			size: this.model.get( 'size' ),
 		} )
-			// Re-enable buttons.
+			// Re-enable buttons and cropper.
 			.always( () => {
 				this.onSelectEnd();
+				if ( this.cropper ) {
+					this.cropper.setOptions( { enable: true } );
+				}
 			} )
 			.done( () => {
 				// Update & re-render.
@@ -152,17 +165,17 @@ const ImageEditor = Media.View.extend( {
 		this.cropper.update();
 	},
 	onSelectStart() {
-		$( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
 	},
 	onSelectEnd() {
-		$( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
 	},
 	onSelectChange() {
-		$( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
 	},
 	initCropper() {
 		const view     = this;
-		const $image   = $( 'img[id^="image-preview-"]' );
+		const $image   = this.$el.find( 'img[id^="image-preview-"]' );
 		const $parent  = $image.parent();
 		const sizeName = this.model.get( 'size' );
 		const sizes    = this.model.get( 'sizes' );
@@ -178,14 +191,16 @@ const ImageEditor = Media.View.extend( {
 		// Load imgAreaSelect.
 		this.cropper = $image.imgAreaSelect( {
 			parent: $parent,
+			autoHide: false,
 			instance: true,
 			handles: true,
 			keys: true,
 			imageWidth: this.model.get( 'width' ),
 			imageHeight: this.model.get( 'height' ),
-					minWidth: size.width,
+			minWidth: size.width,
 			minHeight: size.height,
 			aspectRatio: aspectRatio,
+			persistent: true,
 			onInit( img ) {
 				// Ensure that the imgAreaSelect wrapper elements are position:absolute.
 				// (even if we're in a position:fixed modal)
