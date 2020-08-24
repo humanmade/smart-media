@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.2.17
+
+- Bug: Ensure cropping UI selectors are scoped to current frame #80
+- Bug: Prevent dismissal of crop select area by clicking on crop background #79
+
 ## v0.2.16
 
 - Bug: Fixed featured image "Replace Image" button behaviour #76
