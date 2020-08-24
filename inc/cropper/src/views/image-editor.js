@@ -116,6 +116,11 @@ const ImageEditor = Media.View.extend( {
 		// Disable buttons.
 		this.onSelectStart();
 
+		// Disable the cropper.
+		if ( this.cropper ) {
+			this.cropper.setOptions( { disable: true } );
+		}
+
 		// Send AJAX request to save the crop coordinates.
 		ajax.post( 'hm_save_crop', {
 			_ajax_nonce: this.model.get( 'nonces' ).edit,
@@ -128,9 +133,12 @@ const ImageEditor = Media.View.extend( {
 			},
 			size: this.model.get( 'size' ),
 		} )
-			// Re-enable buttons.
+			// Re-enable buttons and cropper.
 			.always( () => {
 				this.onSelectEnd();
+				if ( this.cropper ) {
+					this.cropper.setOptions( { enable: true } );
+				}
 			} )
 			.done( () => {
 				// Update & re-render.
@@ -178,14 +186,16 @@ const ImageEditor = Media.View.extend( {
 		// Load imgAreaSelect.
 		this.cropper = $image.imgAreaSelect( {
 			parent: $parent,
+			autoHide: false,
 			instance: true,
 			handles: true,
 			keys: true,
 			imageWidth: this.model.get( 'width' ),
 			imageHeight: this.model.get( 'height' ),
-					minWidth: size.width,
+			minWidth: size.width,
 			minHeight: size.height,
 			aspectRatio: aspectRatio,
+			persistent: true,
 			onInit( img ) {
 				// Ensure that the imgAreaSelect wrapper elements are position:absolute.
 				// (even if we're in a position:fixed modal)
