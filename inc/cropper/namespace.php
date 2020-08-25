@@ -17,7 +17,7 @@ use function HM\Media\get_asset_url;
 function setup() {
 	// Add initial crop data for js attachment models.
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 200, 3 );
-	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_thumbs', 100 );
+	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_thumbs', 100, 2 );
 
 	// Add tachyon URL to REST responses.
 	add_filter( 'rest_prepare_attachment', __NAMESPACE__ . '\\rest_api_fields', 10, 3 );
@@ -141,14 +141,15 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		}
 	}
 
-	if ( isset( $data['media_details'] ) && $data['media_type'] === 'image' && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
+	// Clean full size URL and ensure file thumbs use Tachyon URLs.
+	if ( isset( $data['media_details'] ) && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
 		$full_size_thumb = $data['original_url'] ?? $data['media_details']['sizes']['full']['source_url'];
- 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
+		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
 			unset( $size['_tachyon_dynamic'] );
 
-			// Handle PDF thumbs.
-			if ( function_exists( 'tachyon_url' ) ) {
+			// Handle PDF / file thumbs.
+			if ( $data['media_type'] !== 'image' && function_exists( 'tachyon_url' ) ) {
 				if ( $name === 'full' ) {
 					$size['source_url'] = tachyon_url( $full_size_thumb );
 				} else {
@@ -160,10 +161,6 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 
 			// Handle image sizes.
 			if ( $data['media_type'] === 'image' ) {
-				// Add crop data.
-				if ( $name !== 'full' ) {
-					$size['crop'] = get_crop( $data['id'], $name );
-				}
 				// Correct full size image details.
 				if ( $name === 'full' ) {
 					$size['file'] = explode( '?', $size['file'] )[0];
@@ -202,6 +199,8 @@ function image_downsize( array $tachyon_args, array $downsize_args ) : array {
 	$crop = get_crop( $attachment_id, $downsize_args['size'] );
 
 	if ( $crop ) {
+		// Remove crop strategy param if present.
+		unset( $tachyon_args['crop_strategy'] );
 		$tachyon_args['crop'] = sprintf( '%dpx,%dpx,%dpx,%dpx', $crop['x'], $crop['y'], $crop['width'], $crop['height'] );
 	}
 
@@ -233,7 +232,7 @@ function get_crop( int $attachment_id, string $size ) : ?array {
 			return null;
 		}
 
-		$size      = $sizes[ $size ];
+		$size = $sizes[ $size ];
 
 		$focal_point = get_post_meta( $attachment_id, '_focal_point', true ) ?: [];
 		$focal_point = array_map( 'absint', $focal_point );
@@ -284,8 +283,8 @@ function get_maximum_crop( int $width, int $height, int $crop_width, int $crop_h
 /**
  * Add extra meta data to attachment js.
  *
- * @param  array $response
- * @param  WP_Post $attachment
+ * @param array $response
+ * @param WP_Post $attachment
  * @return array
  */
 function attachment_js( $response, $attachment ) {
@@ -293,7 +292,7 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
-	// We can't edit or SVGs.
+	// We can't edit SVGs.
 	if ( $response['mime'] === 'image/svg+xml' ) {
 		return $response;
 	}
@@ -349,7 +348,7 @@ function attachment_js( $response, $attachment ) {
 			'width'       => $full_size_attrs['width'],
 			'height'      => $full_size_attrs['height'],
 			'crop'        => false,
-			'orientation' => $full_size_attrs['width'] >= $full_size_attrs['height'] ? 'landscape' : 'portrait'
+			'orientation' => $full_size_attrs['width'] >= $full_size_attrs['height'] ? 'landscape' : 'portrait',
 		];
 	}
 
@@ -386,10 +385,11 @@ function attachment_js( $response, $attachment ) {
  * like PDFs to use Tachyon URLs.
  *
  * @param array $response The attachment JS.
+ * @param WP_Post $attachment The attachment post object.
  * @return array
  */
-function attachment_thumbs( $response ) : array {
-	if ( ! method_exists( 'Tachyon', 'validate_image_url' ) || ! is_array( $response ) || ! Tachyon::validate_image_url( $response['url'] ) ) {
+function attachment_thumbs( $response, $attachment ) : array {
+	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
 		return $response;
 	}
 
