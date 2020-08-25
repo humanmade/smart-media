@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.2.18
+
+- Bug: Ensure PDF thumbnails use Tachyon #81
+- Bug: Fix REST API URLs to use manual crop dimensions #81
+
 ## v0.2.17
 
 - Bug: Ensure cropping UI selectors are scoped to current frame #80
