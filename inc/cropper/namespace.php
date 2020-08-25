@@ -17,7 +17,7 @@ use function HM\Media\get_asset_url;
 function setup() {
 	// Add initial crop data for js attachment models.
 	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_js', 200, 3 );
-	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_thumbs', 100 );
+	add_filter( 'wp_prepare_attachment_for_js', __NAMESPACE__ . '\\attachment_thumbs', 100, 2 );
 
 	// Add tachyon URL to REST responses.
 	add_filter( 'rest_prepare_attachment', __NAMESPACE__ . '\\rest_api_fields', 10, 3 );
@@ -283,8 +283,8 @@ function get_maximum_crop( int $width, int $height, int $crop_width, int $crop_h
 /**
  * Add extra meta data to attachment js.
  *
- * @param  array $response
- * @param  WP_Post $attachment
+ * @param array $response
+ * @param WP_Post $attachment
  * @return array
  */
 function attachment_js( $response, $attachment ) {
@@ -292,7 +292,7 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
-	// We can't edit or SVGs.
+	// We can't edit SVGs.
 	if ( $response['mime'] === 'image/svg+xml' ) {
 		return $response;
 	}
@@ -385,10 +385,11 @@ function attachment_js( $response, $attachment ) {
  * like PDFs to use Tachyon URLs.
  *
  * @param array $response The attachment JS.
+ * @param WP_Post $attachment The attachment post object.
  * @return array
  */
-function attachment_thumbs( $response ) : array {
-	if ( ! method_exists( 'Tachyon', 'validate_image_url' ) || ! is_array( $response ) || Tachyon::validate_image_url( $response['url'] ) ) {
+function attachment_thumbs( $response, $attachment ) : array {
+	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
 		return $response;
 	}
 
