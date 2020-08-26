@@ -340,3 +340,31 @@ Media.events.on( 'frame:init', () => {
     }
   } );
 } );
+
+// Add width & height attributes to library images for smoother loading.
+const MediaAttachment = Media.view.Attachment;
+const MediaAttachmentLibrary = Media.view.Attachment.Library;
+const MediaAttachmentEditLibrary = Media.view.Attachment.EditLibrary;
+const MediaAttachmentSelection = Media.view.Attachment.Selection;
+const overrideRender = function () {
+  MediaAttachment.prototype.render.apply( this, arguments );
+  if ( this.model.get( 'type' ) === 'image' && ! this.model.get( 'uploading' ) ) {
+    const size = this.imageSize();
+    this.$el.find( 'img' ).attr( {
+      width: size.width,
+      height: size.height,
+    } );
+  }
+};
+Media.view.Attachment = MediaAttachment.extend( {
+  render: overrideRender,
+} );
+Media.view.Attachment.Library = MediaAttachmentLibrary.extend( {
+  render: overrideRender,
+} );
+Media.view.Attachment.EditLibrary = MediaAttachmentEditLibrary.extend( {
+  render: overrideRender,
+} );
+Media.view.Attachment.Selection = MediaAttachmentSelection.extend( {
+  render: overrideRender,
+} );
