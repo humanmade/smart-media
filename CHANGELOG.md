@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.2.19
+
+- Bug: Fix uploader error after inserting existing media into post
+- Enhancement: Add width and height attributes to images in media library to improve loading and fix layout jitter
+
 ## v0.2.18
 
 - Bug: Ensure PDF thumbnails use Tachyon #81
