@@ -147,6 +147,9 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
     libraryState.get( 'selection' ).on( 'selection:single', () => {
       const single = this.state( 'edit' ).get( 'selection' ).single();
       if ( single.get( 'uploading' ) ) {
+        // Manually trigger the ready event on the content subviews to ensure
+        // the uploader status view is properly set up.
+        this.content.trigger( 'ready' );
         return;
       }
 
