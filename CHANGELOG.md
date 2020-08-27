@@ -1,9 +1,12 @@
 Changelog
 =========
 
-## v0.2.19
+## v0.2.20
 
 - Bug: Fix uploader error after inserting existing media into post
+
+## v0.2.19
+
 - Enhancement: Add width and height attributes to images in media library to improve loading and fix layout jitter
 
 ## v0.2.18

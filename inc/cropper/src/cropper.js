@@ -147,9 +147,6 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
     libraryState.get( 'selection' ).on( 'selection:single', () => {
       const single = this.state( 'edit' ).get( 'selection' ).single();
       if ( single.get( 'uploading' ) ) {
-        // Manually trigger the ready event on the content subviews to ensure
-        // the uploader status view is properly set up.
-        this.content.trigger( 'ready' );
         return;
       }
 
@@ -367,4 +364,18 @@ Media.view.Attachment.EditLibrary = MediaAttachmentEditLibrary.extend( {
 } );
 Media.view.Attachment.Selection = MediaAttachmentSelection.extend( {
   render: overrideRender,
+} );
+
+/**
+ * Ensure uploader status view is actually rendered before
+ * updating info display.
+ */
+const MediaUploaderStatus = Media.view.UploaderStatus;
+Media.view.UploaderStatus = MediaUploaderStatus.extend( {
+  info: function () {
+    if ( ! this.$index ) {
+      return;
+    }
+    MediaUploaderStatus.prototype.info.apply( this, arguments );
+  }
 } );
