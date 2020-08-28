@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.21
+
+- Bug: Fix gallery editor styling
+
 ## v0.2.20
 
 - Bug: Fix uploader error after inserting existing media into post
