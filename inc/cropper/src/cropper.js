@@ -98,6 +98,11 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       return;
     }
 
+    // Don't add the edit state if we also have the built in cropper state.
+    if ( this.states.get( 'cropper' ) ) {
+      return;
+    }
+
     // If we already have the state it's safe to ignore.
     if ( this.states.get( 'edit' ) ) {
       return;
