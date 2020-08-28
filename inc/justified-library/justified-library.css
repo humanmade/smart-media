@@ -1,7 +1,7 @@
 .wp-core-ui .attachments-browser .attachment,
 .wp-core-ui .media-frame-content[data-columns] .attachment {
 	width: auto;
-	max-height: 168px;
+	max-height: 198px;
 }
 
 .wp-core-ui .attachments-browser .attachment.uploading .thumbnail,
@@ -47,4 +47,8 @@
 .wp-core-ui .attachments-browser .attachment .thumbnail img.icon {
 	height: auto;
 	padding: 60px 50px;
+}
+
+.wp-core-ui .attachments-browser .attachment .button-link {
+	z-index: 9;
 }
