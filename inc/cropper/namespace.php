@@ -71,9 +71,9 @@ function setup() {
 	 * the Core one doesn't work with Tachyon due to the sizing details
 	 * being stored in the query string.
 	 */
-	remove_filter( 'the_content', 'wp_make_content_images_responsive' );
+	// remove_filter( 'the_content', 'wp_make_content_images_responsive' );
 	// Runs very late to ensure images have passed through Tachyon first.
-	add_filter( 'the_content', __NAMESPACE__ . '\\make_content_images_responsive', 999999 );
+	// add_filter( 'the_content', __NAMESPACE__ . '\\make_content_images_responsive', 999999 );
 
 	// Calculate srcset based on zoom modifiers.
 	add_filter( 'wp_calculate_image_srcset', __NAMESPACE__ . '\\image_srcset', 10, 5 );
@@ -829,7 +829,7 @@ function massage_meta_data_for_orientation( array $meta_data ) {
  * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
  */
 function make_content_images_responsive( string $content ) : string {
-	$images = \Tachyon::parse_images_from_html( $content );
+	$images = Tachyon::parse_images_from_html( $content );
 	if ( empty( $images ) ) {
 		// No images, leave early.
 		return $content;
