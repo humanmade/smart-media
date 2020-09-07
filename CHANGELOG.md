@@ -1,8 +1,6 @@
 Changelog
 =========
 
-## v1.0.0
-
 - Enhancement: WP 5.5 Support
 - Enhancement: Don't strip width and height attributes
 
