@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.22
+
+- Bug: Allow for original image URLs with existing query string
+
 ## v0.2.21
 
 - Bug: Fix gallery editor styling
