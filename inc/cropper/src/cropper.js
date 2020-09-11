@@ -151,9 +151,6 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
     // Handle selection events.
     libraryState.get( 'selection' ).on( 'selection:single', () => {
       const single = this.state( 'edit' ).get( 'selection' ).single();
-      if ( single.get( 'uploading' ) ) {
-        return;
-      }
 
       // Update the placeholder the featured image frame uses to set its
       // default selection from.

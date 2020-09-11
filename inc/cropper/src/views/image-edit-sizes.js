@@ -13,8 +13,15 @@ const ImageEditSizes = Media.View.extend( {
 	},
 	initialize() {
 		this.listenTo( this.model, 'change:sizes', this.render );
+		this.listenTo( this.model, 'change:uploading', this.render );
+		if ( ! this.model.get( 'size' ) ) {
+			this.model.set( { size: 'full' } );
+		}
 		this.on( 'ready', () => {
-			this.el.querySelector( '.current' ).scrollIntoView();
+			const current = this.el.querySelector( '.current' );
+			if ( current ) {
+				current.scrollIntoView();
+			}
 		} );
 	},
 	setSize( e ) {

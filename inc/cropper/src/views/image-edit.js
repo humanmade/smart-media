@@ -57,7 +57,11 @@ const ImageEditView = Media.View.extend( {
 		const views = [];
 
 		// If the attachment info hasn't loaded yet show a spinner.
-		if ( this.model.get( 'uploading' ) || ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) ) {
+		if ( this.model.get( 'uploading' ) ) {
+			views.push( new Media.view.UploaderStatus( {
+				controller: this.controller,
+			} ) );
+		} else if ( this.model.get( 'id' ) && ! this.model.get( 'url' ) ) {
 			views.push( new Media.view.Spinner() );
 		} else {
 			// Ensure this attachment is editable.
