@@ -1,6 +1,9 @@
 Changelog
 =========
 
+- Enhancement: WP 5.5 Support
+- Enhancement: Don't strip width and height attributes
+
 ## v0.2.22
 
 - Bug: Allow for original image URLs with existing query string
