@@ -71,9 +71,9 @@ function setup() {
 	 * the Core one doesn't work with Tachyon due to the sizing details
 	 * being stored in the query string.
 	 */
-	remove_filter( 'the_content', 'wp_make_content_images_responsive' );
+	remove_filter( 'the_content', 'wp_filter_content_tags' );
 	// Runs very late to ensure images have passed through Tachyon first.
-	add_filter( 'the_content', __NAMESPACE__ . '\\make_content_images_responsive', 999999 );
+	add_filter( 'the_content', __NAMESPACE__ . '\\filter_content_tags', 999999 );
 
 	// Calculate srcset based on zoom modifiers.
 	add_filter( 'wp_calculate_image_srcset', __NAMESPACE__ . '\\image_srcset', 10, 5 );
@@ -825,11 +825,20 @@ function massage_meta_data_for_orientation( array $meta_data ) {
  * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
  *
  * @param string $content The raw post content to be filtered.
+ * @param string $context The current filter context.
  *
  * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
  */
-function make_content_images_responsive( string $content ) : string {
-	$images = \Tachyon::parse_images_from_html( $content );
+function filter_content_tags( string $content, string $context = null ) : string {
+	if ( null === $context ) {
+		$context = current_filter();
+	}
+
+	if ( false === strpos( $content, '<img' ) ) {
+		return $content;
+	}
+
+	$images = Tachyon::parse_images_from_html( $content );
 	if ( empty( $images ) ) {
 		// No images, leave early.
 		return $content;
@@ -878,8 +887,12 @@ function make_content_images_responsive( string $content ) : string {
 	 */
 	_prime_post_caches( array_keys( $attachment_ids ), false, true );
 
+	// Whether to add the lazy loading attribute.
+	$add_loading_attr = wp_lazy_loading_enabled( 'img', $context );
+
 	foreach ( $selected_images as $image => $image_data ) {
 		$attachment_id = $image_data['id'];
+
 		// The ID returned here may not always be an image, eg. if the attachment
 		// has been deleted but is still referenced in the content or if the content
 		// has been migrated and the attachment IDs no longer correlate to the right
@@ -887,11 +900,61 @@ function make_content_images_responsive( string $content ) : string {
 		if ( ! wp_attachment_is_image( $attachment_id ) ) {
 			continue;
 		}
+
 		$image_meta = wp_get_attachment_metadata( $attachment_id );
-		if ( $image_meta && is_array( $image_meta ) ) {
-			$content = str_replace( $image, add_srcset_and_sizes( $image_data, $image_meta, $attachment_id ), $content );
-		} else {
+		if ( ! $image_meta || ! is_array( $image_meta ) ) {
 			trigger_error( sprintf( 'Could not retrieve image meta data for Attachment ID "%s"', (string) $attachment_id ), E_USER_WARNING );
+			continue;
+		}
+
+		/**
+		 * Filters whether to add the missing `width` and `height` HTML attributes to the img tag. Default `true`.
+		 *
+		 * Returning anything else than `true` will not add the attributes.
+		 *
+		 * @since 5.5.0
+		 *
+		 * @param bool   $value         The filtered value, defaults to `true`.
+		 * @param string $image         The HTML `img` tag where the attribute should be added.
+		 * @param string $context       Additional context about how the function was called or where the img tag is.
+		 * @param int    $attachment_id The image attachment ID.
+		 */
+		$add_hw = apply_filters( 'wp_img_tag_add_width_and_height_attr', true, $image, $context, $attachment_id );
+
+		/**
+		 * Filters whether to add the `srcset` and `sizes` HTML attributes to the img tag. Default `true`.
+		 *
+		 * Returning anything else than `true` will not add the attributes.
+		 *
+		 * @since 5.5.0
+		 *
+		 * @param bool   $value         The filtered value, defaults to `true`.
+		 * @param string $image         The HTML `img` tag where the attribute should be added.
+		 * @param string $context       Additional context about how the function was called or where the img tag is.
+		 * @param int    $attachment_id The image attachment ID.
+		 */
+		$add_srcset = apply_filters( 'wp_img_tag_add_srcset_and_sizes_attr', true, $image, $context, $attachment_id );
+
+		$filtered_image = $image;
+
+		// Add 'width' and 'height' attributes if applicable.
+		if ( $add_hw && $attachment_id > 0 && false === strpos( $filtered_image, ' width=' ) && false === strpos( $filtered_image, ' height=' ) ) {
+			$filtered_image = add_width_and_height_attr( $filtered_image, $image_meta, $attachment_id );
+		}
+
+		// Add 'srcset' and 'sizes' attributes if applicable.
+		if ( $add_srcset && $attachment_id > 0 && false === strpos( $filtered_image, ' srcset=' ) ) {
+			$filtered_image = add_srcset_and_sizes_attr( $filtered_image, $image_meta, $attachment_id );
+		}
+
+		// Add 'loading' attribute if applicable.
+		if ( $add_loading_attr && false === strpos( $filtered_image, ' loading=' ) ) {
+			$filtered_image = wp_img_tag_add_loading_attr( $filtered_image, $context );
+		}
+
+		// Update the content.
+		if ( $filtered_image !== $image ) {
+			$content = str_replace( $image, $filtered_image, $content );
 		}
 	}
 
@@ -899,34 +962,29 @@ function make_content_images_responsive( string $content ) : string {
 }
 
 /**
- * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
+ * Get the image dimensions from the img src attribute.
  *
  * @TODO Deal with edit hashes by getting the previous version of the meta
  *       data if required for calculating the srcset using the meta value of
  *       `_wp_attachment_backup_sizes`. To get the edit hash, refer to
  *       wp/wp-includes/media.php:1380
  *
- * @param array $image_data    The full data extracted via `make_content_images_responsive`.
- * @param array $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
- * @param int   $attachment_id Image attachment ID.
- *
- * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
+ * @param string $image_src The extracted image src.
+ * @param array $image_meta The attachment meta data.
+ * @return false|array Returns an array of [width, height] on success, false on failure.
  */
-function add_srcset_and_sizes( array $image_data, array $image_meta, int $attachment_id ) : string {
-	$image = $image_data['img_tag'];
-	$image_src = $image_data['img_url'];
-
+function get_img_src_dimensions( string $image_src, array $image_meta ) {
 	// Bail early if an image has been inserted and later edited.
 	list( $image_path ) = explode( '?', $image_src );
 	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
 		strpos( wp_basename( $image_path ), $img_edit_hash[0] ) === false ) {
-		return $image;
+		return false;
 	}
 
 	$width = false;
 	$height = false;
 
-	parse_str( html_entity_decode( wp_parse_url( $image_data['img_url'], PHP_URL_QUERY ) ), $tachyon_args );
+	parse_str( html_entity_decode( wp_parse_url( $image_src, PHP_URL_QUERY ) ), $tachyon_args );
 
 	// Need to work back width and height from various Tachyon options.
 	if ( isset( $tachyon_args['resize'] ) ) {
@@ -959,10 +1017,62 @@ function add_srcset_and_sizes( array $image_data, array $image_meta, int $attach
 
 	// Still stumped?
 	if ( ! $width || ! $height ) {
+		return false;
+	}
+
+	return [ $width, $height ];
+}
+
+/**
+ * Adds 'width' and 'height' attributes to an existing 'img' element.
+ *
+ * @param string $image The extracted image tag.
+ * @param array $image_meta The image meta data as returned by 'wp_get_attachment_metadata()'.
+ *
+ * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
+ */
+function add_width_and_height_attr( string $image, array $image_meta ) : string {
+	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
+
+	// Return early if we couldn't get the image source.
+	if ( ! $image_src ) {
 		return $image;
 	}
 
-	$size_array = [ $width, $height ];
+	// Calculate width & height.
+	$size_array = get_img_src_dimensions( $image_src, $image_meta );
+	if ( ! $size_array ) {
+		return $image;
+	}
+
+	$hw = trim( image_hwstring( $size_array[0], $size_array[1] ) );
+	return str_replace( '<img', "<img {$hw}", $image );
+}
+
+/**
+ * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
+ *
+ * @param string $image The image tag.
+ * @param array $image_meta The image meta data as returned by 'wp_get_attachment_metadata()'.
+ * @param int   $attachment_id Image attachment ID.
+ *
+ * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
+ */
+function add_srcset_and_sizes_attr( string $image, array $image_meta, int $attachment_id ) : string {
+	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
+
+	// Return early if we couldn't get the image source.
+	if ( ! $image_src ) {
+		return $image;
+	}
+
+	// Calculate width & height.
+	$size_array = get_img_src_dimensions( $image_src, $image_meta );
+
+	if ( ! $size_array ) {
+		return $image;
+	}
+
 	$srcset = wp_calculate_image_srcset( $size_array, $image_src, $image_meta, $attachment_id );
 
 	if ( $srcset ) {
