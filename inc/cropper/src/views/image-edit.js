@@ -30,7 +30,7 @@ const ImageEditView = Media.View.extend( {
 			return;
 		}
 
-		const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
+		const selectedBlock = wp.data.select( 'core/block-editor' )?.getSelectedBlock();
 		if ( ! selectedBlock ) {
 			return;
 		}
