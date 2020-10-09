@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.2.23
+
+- Bug: Check wp.data store before using to support classic editor
+
 ## v0.2.22
 
 - Bug: Allow for original image URLs with existing query string
