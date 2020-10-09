@@ -83,10 +83,11 @@ MESSAGE=$( printf 'Build changes from %s\n\n%s' "${COMMIT}" "${CIRCLE_BUILD_URL}
 git commit -m "$MESSAGE"
 
 # Push it (real good).
-git push origin "$DEPLOY_BRANCH"
 
 # Make a release if one doesn't exist.
 if [[ $DEPLOY_AS_RELEASE = "yes" && $(git tag -l "$VERSION") != $VERSION ]]; then
     git tag "$VERSION"
     git push origin "$VERSION"
+else
+    git push origin "$DEPLOY_BRANCH"
 fi
