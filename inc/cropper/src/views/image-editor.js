@@ -61,7 +61,7 @@ const ImageEditor = Media.View.extend( {
 	},
 	update() {
 		// Update the redux store in gutenberg.
-		if ( wp && wp.data ) {
+		if ( wp && wp.data && wp.data.dispatch( 'core' )?.saveMedia ) {
 			wp.data.dispatch( 'core' ).saveMedia( {
 				id: this.model.get( 'id' ),
 			} );
