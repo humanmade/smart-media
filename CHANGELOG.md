@@ -1,15 +1,15 @@
 Changelog
 =========
 
+## v0.3.1
+
+- Bug: Check wp.data store before using to support classic editor
+
 # v0.3.0
 
 - Enhancement: WP 5.5 Support
 - Enhancement: Don't strip width and height attributes
 - Enhancement: Switch to edit mode during attachment upload
-
-## v0.2.23
-
-- Bug: Check wp.data store before using to support classic editor
 
 ## v0.2.22
 
