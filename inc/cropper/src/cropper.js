@@ -272,7 +272,7 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
 
             // Update current block if we can map the attachment to attributes.
             if ( wp && wp.data ) {
-              const selectedBlock = wp.data.select( 'core/block-editor' ).getSelectedBlock();
+              const selectedBlock = wp.data.select( 'core/block-editor' )?.getSelectedBlock();
               if ( ! selectedBlock ) {
                 return;
               }
