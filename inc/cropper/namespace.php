@@ -81,6 +81,9 @@ function setup() {
 	// Remove the core additional sizes 1536x1536 and 2048x2048 as we use Tachyon's zoom.
 	remove_image_size( '1536x1536' );
 	remove_image_size( '2048x2048' );
+
+	// Add support for URL encoded image paths.
+	add_filter( 'wp_image_file_matches_image_meta', __NAMESPACE__ . '\\image_file_matches_image_meta', 10, 4 );
 }
 
 /**
@@ -1253,4 +1256,43 @@ function editor_max_image_size( array $size_array, $size ) : array {
 		$sizes[ $size ]['width'],
 		$sizes[ $size ]['height'],
 	];
+}
+
+/**
+ * Filter wp_image_file_matches_image_meta() to add support for URL encoded images.
+ *
+ * In some cases Tachyon or smart media can return or store a URL encoded image src.
+ * WordPress checks the passed image URL against the image metadata as a safety check
+ * when editing images inline but it does not account for URL encoded paths.
+ *
+ * @param bool $match Whether the image has matched or not.
+ * @param string $image_location The image URL to compare.
+ * @param array $image_meta Attachment meta data.
+ * @param int $attachment_id The attachment ID.
+ * @return bool
+ */
+function image_file_matches_image_meta( bool $match, string $image_location, array $image_meta, int $attachment_id ) : bool {
+	// Return found matches immediately.
+	if ( $match ) {
+		return $match;
+	}
+
+	// Bail if we've already checked this URL.
+	if ( isset( $image_meta['is_url_decoded'] ) ) {
+		return $match;
+	}
+
+	// Ignore any URLs that definitely don't contain URL encoded characters.
+	if ( strpos( $image_location, '%' ) === false ) {
+		return $match;
+	}
+
+	// URL decode the image src.
+	$image_location = urldecode( $image_location );
+
+	// Add a flag to image meta to avoid recursion.
+	$image_meta['is_url_decoded'] = true;
+
+	// Check again for a match.
+	return wp_image_file_matches_image_meta( $image_location, $image_meta, $attachment_id );
 }
