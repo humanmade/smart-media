@@ -152,6 +152,12 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
     libraryState.get( 'selection' ).on( 'selection:single', () => {
       const single = this.state( 'edit' ).get( 'selection' ).single();
 
+      // Check that the attachment is a complete object. Built in placeholders
+      // exist for the cover block that can confuse things.
+      if ( ! single.get( 'url' ) ) {
+        return;
+      }
+
       // Update the placeholder the featured image frame uses to set its
       // default selection from.
       if ( isFeaturedImage ) {
