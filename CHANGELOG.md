@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.2
+
+- Bug: Inline image editing in image block fails with files containing unicode characters
+
 ## v0.3.1
 
 - Bug: Check wp.data store before using to support classic editor
