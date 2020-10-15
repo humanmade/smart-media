@@ -1,0 +1,188 @@
+/* Hide built in image editor */
+.wp-core-ui {
+
+	&.mode-edit-image {
+		.edit-attachment,
+		.button[id^="imgedit-open-btn-"] {
+			display: none;
+		}
+	}
+
+	.media-image-edit {
+		display: flex;
+		align-items: stretch;
+		max-height: 100%;
+	}
+
+	.media-frame.mode-edit-image {
+		.media-image-edit {
+			margin-right: 30%;
+		}
+
+		.media-sidebar {
+			width: 30%;
+			box-sizing: border-box;
+		}
+	}
+
+	.hm-thumbnail-sizes {
+		flex: 0 0 200px;
+		max-height: 100%;
+		overflow: auto;
+		background: #e5e5e5;
+
+		h2 {
+			margin: 16px;
+			padding: 0;
+		}
+
+		&__list {
+			margin: 0;
+			padding: 0;
+
+			li {
+				width: 100%;
+				margin: 0;
+				padding: 0;
+			}
+
+			li:first-child {
+				button {
+					border-top: 0;
+				}
+			}
+
+			button {
+				background: none;
+				border: 0;
+				border-right: 1px solid #ddd;
+				margin: 0;
+				padding: 16px;
+				box-sizing: border-box;
+				cursor: pointer;
+				display: block;
+				width: 100%;
+				text-align: left;
+			}
+
+			button.current {
+				border: 1px solid #ddd;
+				border-width: 1px 0;
+				padding: 15px 16px;
+				background: #fff;
+				position: relative;
+			}
+
+			h3 {
+				margin: 0 0 8px;
+				padding: 0;
+
+				small {
+					font-weight: 300;
+					white-space: nowrap;
+				}
+			}
+
+			img {
+				display: block;
+				width: auto;
+				height: 80px;
+				max-width: 100%;
+				max-height: 80px;
+			}
+		}
+	}
+
+	.hm-thumbnail-editor {
+		padding: 16px;
+		overflow: auto;
+		flex: 1;
+
+		h2 {
+			margin: 0 0 16px;
+
+			small {
+				font-weight: normal;
+				white-space: nowrap;
+			}
+		}
+
+		.imgedit-menu {
+			p {
+				margin-bottom: 0;
+				font-size: 16px;
+			}
+			button::before {
+				margin-left: 8px;
+			}
+		}
+
+		&__image-wrap {
+			overflow: hidden;
+		}
+
+		&__image {
+			float: left;
+			position: relative;
+
+			&-crop {
+				position: relative;
+			}
+
+			&--preview {
+				float: none;
+			}
+
+			img {
+				display: block;
+				max-width: 100%;
+				max-height: 500px;
+				width: auto;
+				height: auto;
+			}
+
+			img[src$=".svg"] {
+				width: 100%;
+			}
+
+			.image-preview-full {
+				cursor: crosshair;
+			}
+		}
+
+		&__actions {
+			margin: 16px 0 8px;
+		}
+
+		.imgedit-wait {
+			position: static;
+			width: 20px;
+			height: 20px;
+			vertical-align: middle;
+			float: right;
+			margin: 4px 0 4px 10px;
+
+			&::before {
+				margin: 0;
+				position: static;
+			}
+		}
+
+		&__focal-point {
+			position: absolute;
+			box-sizing: border-box;
+			width: 80px;
+			height: 80px;
+			margin-left: -40px;
+			margin-top: -40px;
+			left: 0;
+			top: 0;
+			background: rgba(200,125,125,.5);
+			border: 2.5px solid rgba(200,50,50,.5);
+			border-radius: 200px;
+			cursor: cell;
+			display: none;
+		}
+
+	}
+}
