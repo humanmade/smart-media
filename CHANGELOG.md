@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.3
+
+- Bug: Don't switch to edit state if attachment is a fake placeholder such as the cover block default
+
 ## v0.3.2
 
 - Bug: Inline image editing in image block fails with files containing unicode characters
