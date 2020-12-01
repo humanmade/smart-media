@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.4
+
+- Bug: Ensure width and height attributes are correct for uncropped image sizes
+
 ## v0.3.3
 
 - Bug: Don't switch to edit state if attachment is a fake placeholder such as the cover block default
