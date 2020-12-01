@@ -996,9 +996,7 @@ function get_img_src_dimensions( string $image_src, array $image_meta ) {
 	} elseif ( isset( $tachyon_args['fit'] ) ) {
 		// Image is uncropped.
 		list( $width, $height ) = explode( ',', $tachyon_args['fit'] );
-		if ( empty( $height ) ) {
-			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width );
-		}
+		list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width, $height ?? 0 );
 	} else {
 		if ( isset( $tachyon_args['w'] ) ) {
 			$width = (int) $tachyon_args['w'];
@@ -1012,8 +1010,7 @@ function get_img_src_dimensions( string $image_src, array $image_meta ) {
 		}
 		if ( $width && ! $height ) {
 			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $width );
-		}
-		if ( ! $width && $height ) {
+		} elseif ( ! $width && $height ) {
 			list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], 0, $height );
 		}
 	}
@@ -1048,7 +1045,10 @@ function add_width_and_height_attr( string $image, array $image_meta ) : string 
 		return $image;
 	}
 
-	$hw = trim( image_hwstring( $size_array[0], $size_array[1] ) );
+	// Make absolutely sure that height and width attributes are accurate.
+	list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $size_array[0], $size_array[1] );
+
+	$hw = trim( image_hwstring( $width, $height ) );
 	return str_replace( '<img', "<img {$hw}", $image );
 }
 
@@ -1071,7 +1071,6 @@ function add_srcset_and_sizes_attr( string $image, array $image_meta, int $attac
 
 	// Calculate width & height.
 	$size_array = get_img_src_dimensions( $image_src, $image_meta );
-
 	if ( ! $size_array ) {
 		return $image;
 	}
