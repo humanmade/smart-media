@@ -93,7 +93,6 @@ const ImageEditor = Media.View.extend( {
 		if ( ! crop.hasOwnProperty( 'x' ) ) {
 			if ( focalPoint.hasOwnProperty( 'x' ) ) {
 				const [ cropWidth, cropHeight ] = getMaxCrop( width, height, size.width, size.height );
-
 				this.setSelection( {
 					x: Math.min( width - cropWidth, Math.max( 0, focalPoint.x - ( cropWidth / 2 ) ) ),
 					y: Math.min( height - cropHeight, Math.max( 0, focalPoint.y - ( cropHeight / 2 ) ) ),
@@ -165,13 +164,13 @@ const ImageEditor = Media.View.extend( {
 		this.cropper.update();
 	},
 	onSelectStart() {
-		this.$el.find( '.button-apply-changes, .button-reset' ).attr( 'disabled', 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).prop( 'disabled', true );
 	},
 	onSelectEnd() {
-		this.$el.find( '.button-apply-changes, .button-reset' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes, .button-reset' ).prop( 'disabled', false );
 	},
 	onSelectChange() {
-		this.$el.find( '.button-apply-changes:disabled, .button-reset:disabled' ).removeAttr( 'disabled' );
+		this.$el.find( '.button-apply-changes:disabled, .button-reset:disabled' ).prop( 'disabled', false );
 	},
 	initCropper() {
 		const view     = this;
@@ -207,6 +206,10 @@ const ImageEditor = Media.View.extend( {
 				const $img = $( img );
 				$img.next().css( 'position', 'absolute' )
 					.nextAll( '.imgareaselect-outer' ).css( 'position', 'absolute' );
+
+				// Account for rounding errors in imgareaselect with jQuery v3 innerHeight sub-pixel values.
+				$img.width( Math.round( $img.innerWidth() ) );
+				$img.height( Math.round( $img.innerHeight() ) );
 
 				// Set initial crop.
 				view.reset();
