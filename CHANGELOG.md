@@ -1,9 +1,14 @@
 Changelog
 =========
 
+## v0.3.6
+
+- Bug: Fix modal state when clicking featured image on first page load
+
 ## v0.3.5
 
 - Bug: Cropping UI not showing in WP 5.6 with jQuery v3
+
 ## v0.3.4
 
 - Bug: Ensure width and height attributes are correct for uncropped image sizes
