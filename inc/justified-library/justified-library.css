@@ -1,0 +1,54 @@
+.wp-core-ui .attachments-browser .attachment,
+.wp-core-ui .media-frame-content[data-columns] .attachment {
+	width: auto;
+	max-height: 198px;
+}
+
+.wp-core-ui .attachments-browser .attachment.uploading .thumbnail,
+.wp-core-ui .media-frame-content[data-columns] .attachment.uploading .thumbnail {
+	width: 150px;
+	height: 150px;
+}
+
+.wp-core-ui .attachments-browser .attachment .attachment-preview::before {
+	display: none;
+}
+
+.wp-core-ui .attachments-browser .attachment .thumbnail {
+	position: relative;
+	max-height: 150px;
+	transition: width .3s ease-in-out;
+}
+
+.wp-core-ui .attachments-browser .attachment .thumbnail::after {
+	z-index: 2;
+}
+
+.wp-core-ui .attachments-browser .attachment .thumbnail .centered {
+	position: relative;
+	z-index: 1;
+	-webkit-transform: none;
+	transform: none;
+}
+
+.wp-core-ui .attachments-browser .attachment .filename {
+	z-index: 3;
+}
+
+.wp-core-ui .attachments-browser .attachment .thumbnail img {
+	position: relative;
+	height: 150px;
+	width: auto;
+	display: block;
+	-webkit-transform: none;
+	transform: none;
+}
+
+.wp-core-ui .attachments-browser .attachment .thumbnail img.icon {
+	height: auto;
+	padding: 60px 50px;
+}
+
+.wp-core-ui .attachments-browser .attachment .button-link {
+	z-index: 9;
+}
