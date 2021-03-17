@@ -90,7 +90,7 @@
 				<span class="name"><?php _e( 'URL' ); ?></span>
 				<input type="text" value="{{ data.url }}" readonly />
 			</label>
-			<# var maybeReadOnly = data.can.save || data.allowLocalEdits ? '' : 'readonly'; #>
+			<# var maybeReadOnly = ( ( data.can && data.can.save ) || data.allowLocalEdits ) ? '' : 'readonly'; #>
 			<?php if ( post_type_supports( 'attachment', 'title' ) ) : ?>
 			<label class="setting" data-setting="title">
 				<span class="name"><?php _e( 'Title' ); ?></span>
@@ -141,7 +141,7 @@
 
 		<div class="actions">
 			<a class="view-attachment" href="{{ data.link }}"><?php _e( 'View attachment page' ); ?></a>
-			<# if ( ! data.uploading && data.can.remove ) { #> |
+			<# if ( ! data.uploading && data.can && data.can.remove ) { #> |
 				<?php if ( MEDIA_TRASH ): ?>
 					<# if ( 'trash' === data.status ) { #>
 						<button type="button" class="button-link untrash-attachment"><?php _e( 'Untrash' ); ?></button>
@@ -204,7 +204,7 @@
 	<# if ( data.model.get( 'size' ) === 'full' || data.model.get( 'size' ) === 'full-orig' ) { #>
 		<div class="imgedit-menu wp-clearfix">
 
-			<# if ( data.model.get('editor').can.rotate ) { #>
+			<# if ( data.model.get('editor').can && data.model.get('editor').can.rotate ) { #>
 			<button type="button" class="imgedit-rleft button" onclick="imageEdit.rotate( 90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate counter-clockwise' ); ?></span></button>
 			<button type="button" class="imgedit-rright button" onclick="imageEdit.rotate( -90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate clockwise' ); ?></span></button>
 			<# } else { #>
@@ -229,7 +229,7 @@
 
 			<p class="note-focal-point"><?php esc_html_e( 'Click anywhere on the image to set a focal point for automatic cropping.', 'hm-smart-media' ); ?></p>
 
-			<# if ( ! data.model.get('editor').can.rotate ) { #>
+			<# if ( ! ( data.model.get('editor').can && data.model.get('editor').can.rotate ) ) { #>
 				<p class="note-no-rotate"><em><?php esc_html_e( 'Image rotation is not supported by your web host.' ); ?></em></p>
 			<# } #>
 		</div>
@@ -263,7 +263,7 @@
 	<div class="hm-thumbnail-editor__actions" id="imgedit-panel-{{ data.model.get( 'id' ) }}">
 		<# if ( data.model.get( 'size' ) === 'full' || data.model.get( 'size' ) === 'full-orig' ) { #>
 			<input type="button" onclick="imageEdit.save( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}' )" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
-			<# if ( data.model.get( 'editor' ).can.restore ) { #>
+			<# if ( data.model.get( 'editor' ).can && data.model.get( 'editor' ).can.restore ) { #>
 				<input type="button" onclick="imageEdit.action( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', 'restore' )" class="button button-secondary" value="<?php esc_attr_e( 'Restore image' ); ?>" />
 			<# } #>
 		<# } #>
