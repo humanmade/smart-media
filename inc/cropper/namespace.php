@@ -59,7 +59,7 @@ function setup() {
 	// Fake the image meta data.
 	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 20, 2 );
 
-	// Prevent fake image meta sizes beinng saved to the database.
+	// Prevent fake image meta sizes being saved to the database.
 	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_meta_data' );
 
 	// Add crop data.
@@ -147,6 +147,10 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 
 	// Clean full size URL and ensure file thumbs use Tachyon URLs.
 	if ( isset( $data['media_details'] ) && is_array( $data['media_details'] ) && isset( $data['media_details']['sizes'] ) ) {
+		// Handle REST response sizes format.
+		if ( is_object( $data['media_details']['sizes'] ) ) {
+			$data['media_details']['sizes'] = (array) $data['media_details']['sizes'];
+		}
 		$full_size_thumb = $data['original_url'] ?? $data['media_details']['sizes']['full']['source_url'];
 		foreach ( $data['media_details']['sizes'] as $name => $size ) {
 			// Remove internal flag.
@@ -773,6 +777,9 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
  * @return array
  */
 function filter_update_attachment_meta_data( array $data ) : array {
+	if ( ! isset( $data['sizes'] ) ) {
+		return $data;
+	}
 	foreach ( $data['sizes'] as $size => $size_data ) {
 		if ( isset( $size_data['_tachyon_dynamic'] ) ) {
 			unset( $data['sizes'][ $size ] );
