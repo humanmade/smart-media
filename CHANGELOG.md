@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v0.3.7
+
+- Bug: Fix REST API upload handling
+- Bug: Fix media templates when missing `.can` properties
+
 ## v0.3.6
 
 - Bug: Fix modal state when clicking featured image on first page load
