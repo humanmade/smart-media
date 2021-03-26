@@ -1181,8 +1181,8 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 		$zoomed_image_url = add_query_arg( [
 			'w' => false,
 			'h' => false,
-			$method => "{$width},{$height}",
-			'zoom' => $modifier,
+			$method => rawurlencode( "{$width},{$height}" ),
+			'zoom' => rawurlencode( $modifier ),
 		], $image_src );
 
 		// Append the new target width to the sources array.
