@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.8
+
+- Bug: Ensure srcset URLs are properly escaped
+
 ## v0.3.7
 
 - Bug: Fix REST API upload handling
