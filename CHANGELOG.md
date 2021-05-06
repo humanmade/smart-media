@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.9
+
+- Bug: Fall back to regular preview when missing `editor` object on attachment model
+
 ## v0.3.8
 
 - Bug: Ensure srcset URLs are properly escaped
