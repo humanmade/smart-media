@@ -1,6 +1,9 @@
 Changelog
 =========
 
+## v0.3.10
+
+- Enhancement: Add Asset Manager Framework support
 ## v0.3.9
 
 - Bug: Fall back to regular preview when missing `editor` object on attachment model

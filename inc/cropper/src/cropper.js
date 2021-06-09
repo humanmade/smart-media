@@ -1,4 +1,4 @@
-import { applyFilters, addFilter } from '@wordpress/hooks';
+import { addAction, applyFilters, addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
@@ -30,6 +30,12 @@ addFilter(
     return size || block.attributes.sizeSlug || 'full';
   }
 );
+
+// Ensure Smart Media is supported by Asset Manager Framework.
+addAction( 'amf.extend_toolbar', 'smartmedia/cropper', extend_toolbar => {
+	Media.view.Toolbar = extend_toolbar( Media.view.Toolbar, 'apply' );
+} );
+
 
 // Ensure blocks are deselected when focusing or clicking into the meta boxes.
 if ( wp && wp.data && window._wpLoadBlockEditor ) {
