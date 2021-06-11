@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.11
+
+- Bug: AMP plugin compatibility with featured image modal selection
+
 ## v0.3.10
 
 - Enhancement: Add Asset Manager Framework support
