@@ -24,6 +24,7 @@ function setup() {
 
 	// Add scripts for cropper whenever media modal is loaded.
 	add_action( 'wp_enqueue_media', __NAMESPACE__ . '\\enqueue_scripts', 1 );
+	add_action( 'enqueue_block_editor_assets', __NAMESPACE__ . '\\unhook_amp_media_library_notice', 11 );
 
 	// Save crop data.
 	add_action( 'wp_ajax_hm_save_crop', __NAMESPACE__ . '\\ajax_save_crop' );
@@ -108,6 +109,21 @@ function enqueue_scripts( $hook = false ) {
 	);
 
 	wp_set_script_translations( 'hm-smart-media-cropper', 'hm-smart-media' );
+}
+
+/**
+ * Unhook Google AMP's media frame modifications.
+ *
+ * AMP adds some notices to the media library that interfere with Smart Media's edit state.
+ *
+ * @return void
+ */
+function unhook_amp_media_library_notice() {
+	wp_add_inline_script(
+		'amp-block-editor',
+		'wp.hooks.removeFilter( \'editor.MediaUpload\', \'ampEditorBlocks/withMediaLibraryNotice\' );',
+		'after'
+	);
 }
 
 /**
