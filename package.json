@@ -1,6 +1,6 @@
 {
   "name": "smart-media",
-  "version": "0.3.11",
+  "version": "0.4.0",
   "description": "A smarter media library for WordPress",
   "repository": "https://github.com/humanmade/smart-media",
   "scripts": {
