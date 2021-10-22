@@ -1,9 +1,13 @@
 Changelog
 =========
 
+## v0.4.1
+
+- Bug: Fix WebP support for cropping and display
 ## v0.4.0
 
 - Enhancement: Add filter to skip attachments during Smart Media processing
+
 ## v0.3.11
 
 - Bug: AMP plugin compatibility with featured image modal selection
