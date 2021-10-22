@@ -173,7 +173,7 @@
 				<img src="{{ data.model.get( 'url' ) + ( data.model.get( 'url' ).indexOf( '?' ) >= 0 ? '&amp;' : '?' ) }}fit=0,120" width="{{ data.model.get( 'width' ) }}" height="{{ data.model.get( 'height' ) }}" alt="original" draggable="false" />
 			</button>
 		</li>
-		<# if ( data.model.get( 'mime' ).match( /image\/(jpe?g|png|gif)/ ) ) { #>
+		<# if ( data.model.get( 'mime' ).match( /image\/(jpe?g|png|gif|webp)/ ) ) { #>
 			<# _.each( data.model.get( 'sizes' ), function ( props, size ) { #>
 				<# if ( size && size !== 'full' && size !== 'full-orig' ) { #>
 				<li>
