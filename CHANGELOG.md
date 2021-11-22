@@ -1,9 +1,14 @@
 Changelog
 =========
 
+## v0.4.2
+
+- Bug: Don't trigger edit modal for non image files
+
 ## v0.4.1
 
 - Bug: Fix WebP support for cropping and display
+
 ## v0.4.0
 
 - Enhancement: Add filter to skip attachments during Smart Media processing
