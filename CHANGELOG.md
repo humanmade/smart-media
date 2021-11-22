@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.3.12
+
+- Bug: Don't trigger edit modal for non image files
+
 ## v0.3.11
 
 - Bug: AMP plugin compatibility with featured image modal selection
