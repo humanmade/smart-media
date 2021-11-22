@@ -164,6 +164,11 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
         return;
       }
 
+      // Check this is an image or not.
+      if ( ! single.get( 'mime' ).match( /^image\// ) ) {
+        return;
+      }
+
       // Update the placeholder the featured image frame uses to set its
       // default selection from.
       if ( isFeaturedImage ) {
