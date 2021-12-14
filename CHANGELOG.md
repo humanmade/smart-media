@@ -3,7 +3,7 @@ Changelog
 
 ## v0.4.3
 
-- Bug: Check model has mime type before chaking value
+- Bug: Check model has mime type before checking value
 
 ## v0.4.2
 
