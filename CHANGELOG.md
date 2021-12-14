@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.4.3
+
+- Bug: Check model has mime type before chaking value
+
 ## v0.4.2
 
 - Bug: Don't trigger edit modal for non image files
