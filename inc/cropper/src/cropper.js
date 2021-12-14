@@ -165,7 +165,7 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       }
 
       // Check this is an image or not.
-      if ( ! single.get( 'mime' ).match( /^image\// ) ) {
+      if ( single.get( 'mime' ) && ! single.get( 'mime' ).match( /^image\// ) ) {
         return;
       }
 
