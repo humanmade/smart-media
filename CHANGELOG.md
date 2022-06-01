@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.4.4
+
+- Dependency upgrade
+
 ## v0.4.3
 
 - Bug: Check model has mime type before checking value
