@@ -1,3 +1,4 @@
+import "core-js/stable";
 import { addAction, applyFilters, addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import Media from '@wordpress/media';
