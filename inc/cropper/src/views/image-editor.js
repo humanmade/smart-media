@@ -1,11 +1,8 @@
 import Media from '@wordpress/media';
 import template from '@wordpress/template';
 import ajax from '@wordpress/ajax';
-import jQuery from 'jQuery';
 import smartcrop from 'smartcrop';
 import { getMaxCrop } from '../utils';
-
-const $ = jQuery;
 
 /**
  * Image editor.
@@ -186,6 +183,7 @@ const ImageEditor = Media.View.extend( {
 		}
 
 		const aspectRatio = `${size.width}:${size.height}`;
+		const model = this.model
 
 		// Load imgAreaSelect.
 		this.cropper = $image.imgAreaSelect( {
@@ -201,15 +199,20 @@ const ImageEditor = Media.View.extend( {
 			aspectRatio: aspectRatio,
 			persistent: true,
 			onInit( img ) {
-				// Ensure that the imgAreaSelect wrapper elements are position:absolute.
-				// (even if we're in a position:fixed modal)
-				const $img = $( img );
-				$img.next().css( 'position', 'absolute' )
-					.nextAll( '.imgareaselect-outer' ).css( 'position', 'absolute' );
+				img.nextElementSibling.style.position = 'absolute';
+				let currentSibling = img.nextElementSibling
+				let nextSibling = currentSibling.nextElementSibling
+				while(nextSibling) {
+					if (nextSibling.classList.contains('imgareaselect-outer')) {
+						nextSibling.style.position = 'absolute'
+					}
+					currentSibling = nextSibling
+					nextSibling = currentSibling.nextElementSibling
+				}
 
 				// Account for rounding errors in imgareaselect with jQuery v3 innerHeight sub-pixel values.
-				$img.width( Math.round( $img.innerWidth() ) );
-				$img.height( Math.round( $img.innerHeight() ) );
+				img.style.width = img.clientWidth + 'px';
+				img.style.height = img.clientHeight + 'px';
 
 				// Set initial crop.
 				view.reset();
