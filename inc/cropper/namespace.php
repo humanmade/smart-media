@@ -1197,12 +1197,16 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 
 	list( $width, $height ) = array_map( 'absint', $size_array );
 
-	// Ensure this is a tachyon image, not always the case when parsing from post content.
+	// Ensure this is _not_ a tachyon image, not always the case when parsing from post content.
 	if ( strpos( $image_src, TACHYON_URL ) === false ) {
 		// If the aspect ratio requested matches a custom crop size, pull that
 		// crop (in case there's a user custom crop). Otherwise just use the
 		// given dimensions.
-		$size = nearest_defined_crop_size( $width / $height ) ?: [ $width, $height ];
+		$size = [ $width, $height ];
+		// Avoid errors if either dimension is zero, natural aspect ratio requested so no crop.
+		if ( $width && $height ) {
+			$size = nearest_defined_crop_size( $width / $height ) ?: $size;
+		}
 
 		// Get the tachyon URL for this image size.
 		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
@@ -1261,6 +1265,10 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
  * @return string|null Closest defined image size to that ratio; null if none match.
  */
 function nearest_defined_crop_size( $ratio ) {
+	// Get only the custom image sizes that are croppable.
+	$croppable_sizes = array_filter( wp_get_additional_image_sizes(), function ( $size ) {
+		return absint( $size['width'] ) && absint( $size['height'] );
+	} );
 	/*
 	 * Compare each of the theme crops to the ratio in question. Returns a
 	 * sort-of difference where 0 is identical. Not mathematically meaningful
@@ -1278,7 +1286,7 @@ function nearest_defined_crop_size( $ratio ) {
 			return abs( $crop_ratio / $ratio - 1 );
 		},
 		// ... of all the custom image sizes defined.
-		wp_get_additional_image_sizes()
+		$croppable_sizes
 	);
 	// Sort the differences from most to least similar.
 	asort( $difference_from_theme_crop_ratios, SORT_NUMERIC );
