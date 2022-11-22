@@ -148,6 +148,11 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		return $response;
 	}
 
+	// Check if we should skip this one.
+	if ( skip_attachment( $data['id'] ) ) {
+		return $response;
+	}
+
 	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
 		$data['source_url'] = tachyon_url( $data['source_url'] );
@@ -321,6 +326,11 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
+	// Check if we should skip.
+	if ( skip_attachment( $attachment->ID ) ) {
+		return $response;
+	}
+
 	$meta = wp_get_attachment_metadata( $attachment->ID );
 
 	if ( ! $meta ) {
@@ -405,6 +415,24 @@ function attachment_js( $response, $attachment ) {
 }
 
 /**
+ * Check whether to skip an attachment for Smart Media processing.
+ *
+ * @uses filter hm.smart-media.skip-attachment
+ *
+ * @param integer $attachment_id The attachment ID to check.
+ * @return boolean
+ */
+function skip_attachment( int $attachment_id ) : bool {
+	/**
+	 * Filters whether to skip a given attachment.
+	 *
+	 * @param bool $skip If true then the attachment should be skipped, default false.
+	 * @param int $attachment_id The attachment ID to check.
+	 */
+	return (bool) apply_filters( 'hm.smart-media.skip-attachment', false, $attachment_id );
+}
+
+/**
  * Updates attachments that aren't images but have thumbnails
  * like PDFs to use Tachyon URLs.
  *
@@ -414,6 +442,10 @@ function attachment_js( $response, $attachment ) {
  */
 function attachment_thumbs( $response, $attachment ) : array {
 	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
+		return $response;
+	}
+
+	if ( skip_attachment( $attachment->ID ) ) {
 		return $response;
 	}
 
@@ -712,6 +744,10 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 
 	// Only modify if valid format and for images.
 	if ( ! is_array( $data ) || ! wp_attachment_is_image( $attachment_id ) ) {
+		return $data;
+	}
+
+	if ( skip_attachment( $attachment_id ) ) {
 		return $data;
 	}
 
@@ -1161,12 +1197,16 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 
 	list( $width, $height ) = array_map( 'absint', $size_array );
 
-	// Ensure this is a tachyon image, not always the case when parsing from post content.
+	// Ensure this is _not_ a tachyon image, not always the case when parsing from post content.
 	if ( strpos( $image_src, TACHYON_URL ) === false ) {
 		// If the aspect ratio requested matches a custom crop size, pull that
 		// crop (in case there's a user custom crop). Otherwise just use the
 		// given dimensions.
-		$size = nearest_defined_crop_size( $width / $height ) ?: [ $width, $height ];
+		$size = [ $width, $height ];
+		// Avoid errors if either dimension is zero, natural aspect ratio requested so no crop.
+		if ( $width && $height ) {
+			$size = nearest_defined_crop_size( $width / $height ) ?: $size;
+		}
 
 		// Get the tachyon URL for this image size.
 		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
@@ -1225,6 +1265,10 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
  * @return string|null Closest defined image size to that ratio; null if none match.
  */
 function nearest_defined_crop_size( $ratio ) {
+	// Get only the custom image sizes that are croppable.
+	$croppable_sizes = array_filter( wp_get_additional_image_sizes(), function ( $size ) {
+		return absint( $size['width'] ) && absint( $size['height'] );
+	} );
 	/*
 	 * Compare each of the theme crops to the ratio in question. Returns a
 	 * sort-of difference where 0 is identical. Not mathematically meaningful
@@ -1242,7 +1286,7 @@ function nearest_defined_crop_size( $ratio ) {
 			return abs( $crop_ratio / $ratio - 1 );
 		},
 		// ... of all the custom image sizes defined.
-		wp_get_additional_image_sizes()
+		$croppable_sizes
 	);
 	// Sort the differences from most to least similar.
 	asort( $difference_from_theme_crop_ratios, SORT_NUMERIC );
