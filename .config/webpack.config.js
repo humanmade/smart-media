@@ -1,4 +1,4 @@
-const ManifestPlugin = require('webpack-manifest-plugin');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const path = require('path');
 
@@ -15,7 +15,6 @@ const commonConfig = {
 		chunkFilename: 'inc/[name]/build/chunk.[id].[chunkhash:8].js',
 		publicPath: '/',
 		libraryTarget: 'this',
-		jsonpFunction: 'HMSmartMedia'
 	},
 	target: 'web',
 	resolve: { extensions: [ '.js', '.css', '.scss' ] },
@@ -28,14 +27,19 @@ const commonConfig = {
 				options: {
 					babelrc: false,
 					presets: [
-						[ require( '@babel/preset-env' ), {
-							modules: false,
-							targets: { browsers: [ ' > 0.01%' ] },
-						} ],
+						[
+							require( '@babel/preset-env' ),
+							{
+							  targets: {
+								browsers: ['> 0.01%'],
+							  },
+							  useBuiltIns: 'usage',
+							  corejs: 3,
+							}
+						],
 					],
 					plugins: [
 						require( '@babel/plugin-proposal-object-rest-spread' ),
-						require( '@babel/polyfill' ),
 					],
 				},
 			},
@@ -63,7 +67,6 @@ const commonConfig = {
 		'@wordpress/template': { this: [ 'wp', 'template' ] },
 		'@wordpress/i18n': { this: [ 'wp', 'i18n' ] },
 		'@wordpress/hooks': { this: [ 'wp', 'hooks' ] },
-		'jQuery': 'jQuery',
 		lodash: '_',
 		wp: 'wp',
 	},
@@ -76,7 +79,7 @@ const commonConfig = {
 		},
 	},
 	plugins: [
-		new ManifestPlugin( {
+		new WebpackManifestPlugin( {
 			writeToFileEmit: true,
 		} ),
 		new CleanWebpackPlugin( {
@@ -86,10 +89,9 @@ const commonConfig = {
 };
 
 const devConfig = Object.assign( {}, commonConfig, {
-	devtool: 'cheap-module-eval-source-map',
+	devtool: 'eval-cheap-module-source-map',
 	devServer: {
 		port: 9022,
-		//hot: true,
 		allowedHosts: [
 			'.local',
 			'.localhost',
