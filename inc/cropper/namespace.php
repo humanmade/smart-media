@@ -1010,7 +1010,7 @@ function get_img_src_dimensions( string $image_src, array $image_meta ) {
 	$width = false;
 	$height = false;
 
-	parse_str( html_entity_decode( wp_parse_url( $image_src, PHP_URL_QUERY ) ), $tachyon_args );
+	parse_str( html_entity_decode( wp_parse_url( $image_src, PHP_URL_QUERY ) ?? '' ), $tachyon_args );
 
 	// Need to work back width and height from various Tachyon options.
 	if ( isset( $tachyon_args['resize'] ) ) {
