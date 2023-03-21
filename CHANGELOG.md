@@ -1,13 +1,21 @@
 Changelog
 =========
 
-## v0.3.13
+## v0.4.3
 
-- Bug: Check model has mime type before chaking value
+- Bug: Check model has mime type before checking value
 
-## v0.3.12
+## v0.4.2
 
 - Bug: Don't trigger edit modal for non image files
+
+## v0.4.1
+
+- Bug: Fix WebP support for cropping and display
+
+## v0.4.0
+
+- Enhancement: Add filter to skip attachments during Smart Media processing
 
 ## v0.3.11
 
