@@ -148,11 +148,6 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 		return $response;
 	}
 
-	// Check if we should skip this one.
-	if ( skip_attachment( $data['id'] ) ) {
-		return $response;
-	}
-
 	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
 		$data['source_url'] = tachyon_url( $data['source_url'] );
@@ -326,11 +321,6 @@ function attachment_js( $response, $attachment ) {
 		return $response;
 	}
 
-	// Check if we should skip.
-	if ( skip_attachment( $attachment->ID ) ) {
-		return $response;
-	}
-
 	$meta = wp_get_attachment_metadata( $attachment->ID );
 
 	if ( ! $meta ) {
@@ -415,24 +405,6 @@ function attachment_js( $response, $attachment ) {
 }
 
 /**
- * Check whether to skip an attachment for Smart Media processing.
- *
- * @uses filter hm.smart-media.skip-attachment
- *
- * @param integer $attachment_id The attachment ID to check.
- * @return boolean
- */
-function skip_attachment( int $attachment_id ) : bool {
-	/**
-	 * Filters whether to skip a given attachment.
-	 *
-	 * @param bool $skip If true then the attachment should be skipped, default false.
-	 * @param int $attachment_id The attachment ID to check.
-	 */
-	return (bool) apply_filters( 'hm.smart-media.skip-attachment', false, $attachment_id );
-}
-
-/**
  * Updates attachments that aren't images but have thumbnails
  * like PDFs to use Tachyon URLs.
  *
@@ -442,10 +414,6 @@ function skip_attachment( int $attachment_id ) : bool {
  */
 function attachment_thumbs( $response, $attachment ) : array {
 	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
-		return $response;
-	}
-
-	if ( skip_attachment( $attachment->ID ) ) {
 		return $response;
 	}
 
@@ -744,10 +712,6 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 
 	// Only modify if valid format and for images.
 	if ( ! is_array( $data ) || ! wp_attachment_is_image( $attachment_id ) ) {
-		return $data;
-	}
-
-	if ( skip_attachment( $attachment_id ) ) {
 		return $data;
 	}
 
