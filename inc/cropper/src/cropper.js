@@ -172,6 +172,14 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       // Update the placeholder the featured image frame uses to set its
       // default selection from.
       if ( isFeaturedImage ) {
+        // Avoid updating attributes on any selected blocks.
+        if ( wp && wp.data ) {
+          const selectedBlock = wp.data.select( 'core/block-editor' )?.getSelectedBlock();
+          if ( selectedBlock ) {
+            wp.data.dispatch( 'core/block-editor' ).clearSelectedBlock();
+          }
+        }
+
         wp.media.view.settings.post.featuredImageId = single.get( 'id' );
       }
 
