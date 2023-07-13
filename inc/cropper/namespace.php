@@ -144,7 +144,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	// Confirm it's definitely an image.
-	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) || (strpos( $data['media_type'], 'image/' ) !== 0 ) ) {
 		return $response;
 	}
 
