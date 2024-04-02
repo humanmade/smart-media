@@ -167,7 +167,9 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 
 	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
-		$data['source_url'] = tachyon_url( $data['source_url'] );
+		if ( function_exists( 'tachyon_url' ) ) {
+			$data['source_url'] = tachyon_url( $data['source_url'] );
+		}
 
 		// Add focal point.
 		$focal_point = get_post_meta( $data['id'], '_focal_point', true );
@@ -453,6 +455,10 @@ function skip_attachment( int $attachment_id ) : bool {
  * @return array
  */
 function attachment_thumbs( $response, $attachment ) : array {
+	if ( ! function_exists( 'tachyon_url' ) ) {
+		return $response;
+	}
+
 	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
 		return $response;
 	}
@@ -904,19 +910,23 @@ function massage_meta_data_for_orientation( array $meta_data ) {
  * @return string Full img tag with attributes that will replace the source img tag.
  */
 function content_img_tag( string $filtered_image, string $context, int $attachment_id ) : string {
-	if ( strpos( $filtered_image, TACHYON_URL ) === false ) {
+	if ( ! defined( 'TACHYON_URL' ) || strpos( $filtered_image, TACHYON_URL ) === false ) {
+		return $filtered_image;
+	}
+
+	if ( $attachment_id === 0 ) {
 		return $filtered_image;
 	}
 
 	$image_meta = wp_get_attachment_metadata( $attachment_id );
 
 	// Add 'width' and 'height' attributes if applicable.
-	if ( $attachment_id > 0 && ! str_contains( $filtered_image, ' width=' ) && ! str_contains( $filtered_image, ' height=' ) ) {
+	if ( ! str_contains( $filtered_image, ' width=' ) && ! str_contains( $filtered_image, ' height=' ) ) {
 		$filtered_image = add_width_and_height_attr( $filtered_image, $image_meta );
 	}
 
 	// Add 'srcset' and 'sizes' attributes if applicable.
-	if ( $attachment_id > 0 && ! str_contains( $filtered_image, ' srcset=' ) ) {
+	if ( ! str_contains( $filtered_image, ' srcset=' ) ) {
 		$filtered_image = add_srcset_and_sizes_attr( $filtered_image, $image_meta, $attachment_id );
 	}
 
@@ -935,7 +945,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
  * @return bool The filtered value, defaults to <code>true</code>.
  */
 function img_tag_add_attr( bool $value, string $image ) : bool {
-	return strpos( $image, TACHYON_URL ) === false ? $value : false;
+	return ! defined( 'TACHYON_URL' ) || strpos( $image, TACHYON_URL ) === false ? $value : false;
 }
 
 /**
@@ -1125,7 +1135,7 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	list( $width, $height ) = array_map( 'absint', $size_array );
 
 	// Ensure this is _not_ a tachyon image, not always the case when parsing from post content.
-	if ( strpos( $image_src, TACHYON_URL ) === false ) {
+	if ( ! defined( 'TACHYON_URL' ) || strpos( $image_src, TACHYON_URL ) === false ) {
 		// If the aspect ratio requested matches a custom crop size, pull that
 		// crop (in case there's a user custom crop). Otherwise just use the
 		// given dimensions.
