@@ -284,6 +284,7 @@ const ImageEditor = Media.View.extend( {
 	},
 	onEditImage() {
 		this.$el.find( '.focal-point, .note-focal-point' ).hide();
+		this.$el.find( '.imgedit-submit-btn' ).prop( 'disabled', false );
 	},
 } );
 
