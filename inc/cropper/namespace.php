@@ -72,9 +72,21 @@ function setup() {
 	 * the Core one doesn't work with Tachyon due to the sizing details
 	 * being stored in the query string.
 	 */
-	remove_filter( 'the_content', 'wp_filter_content_tags' );
-	// Runs very late to ensure images have passed through Tachyon first.
-	add_filter( 'the_content', __NAMESPACE__ . '\\filter_content_tags', 999999 );
+	add_filter( 'wp_img_tag_add_width_and_height_attr', __NAMESPACE__ . '\\img_tag_add_attr', 10, 2 );
+	add_filter( 'wp_img_tag_add_srcset_and_sizes_attr', __NAMESPACE__ . '\\img_tag_add_attr', 10, 2 );
+
+	/**
+	 * Filters an img tag within the content for a given context.
+	 *
+	 * @param string $filtered_image Full img tag with attributes that will replace the source img tag.
+	 * @param string $context        Additional context, like the current filter name or the function name from where this was called.
+	 * @param int    $attachment_id  The image attachment ID. May be 0 in case the image is not an attachment.
+	 * @return string Full img tag with attributes that will replace the source img tag.
+	 */
+	add_filter( 'wp_content_img_tag', __NAMESPACE__ . '\\content_img_tag', 10, 3 );
+
+	// Ensure the get dimensions function understands Tachyon.
+	add_filter( 'wp_image_src_get_dimensions', __NAMESPACE__ . '\\src_get_dimensions', 10, 4 );
 
 	// Calculate srcset based on zoom modifiers.
 	add_filter( 'wp_calculate_image_srcset', __NAMESPACE__ . '\\image_srcset', 10, 5 );
@@ -144,7 +156,7 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 	}
 
 	// Confirm it's definitely an image.
-	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) ) {
+	if ( ! isset( $data['id'] ) || ! isset( $data['media_type'] ) || (strpos( $data['media_type'], 'image/' ) !== 0 ) ) {
 		return $response;
 	}
 
@@ -155,7 +167,9 @@ function rest_api_fields( WP_REST_Response $response ) : WP_REST_Response {
 
 	if ( isset( $data['source_url'] ) && $data['media_type'] === 'image' ) {
 		$data['original_url'] = $data['source_url'];
-		$data['source_url'] = tachyon_url( $data['source_url'] );
+		if ( function_exists( 'tachyon_url' ) ) {
+			$data['source_url'] = tachyon_url( $data['source_url'] );
+		}
 
 		// Add focal point.
 		$focal_point = get_post_meta( $data['id'], '_focal_point', true );
@@ -441,6 +455,10 @@ function skip_attachment( int $attachment_id ) : bool {
  * @return array
  */
 function attachment_thumbs( $response, $attachment ) : array {
+	if ( ! function_exists( 'tachyon_url' ) ) {
+		return $response;
+	}
+
 	if ( ! is_array( $response ) || wp_attachment_is_image( $attachment ) ) {
 		return $response;
 	}
@@ -884,143 +902,50 @@ function massage_meta_data_for_orientation( array $meta_data ) {
 }
 
 /**
- * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
+ * Add our special handlers for width & height attrs and srcset attributes.
  *
- * @param string $content The raw post content to be filtered.
- * @param string $context The current filter context.
- *
- * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
+ * @param string $filtered_image Full img tag with attributes that will replace the source img tag.
+ * @param string $context Additional context, like the current filter name or the function name from where this was called.
+ * @param int $attachment_id  The image attachment ID. May be 0 in case the image is not an attachment.
+ * @return string Full img tag with attributes that will replace the source img tag.
  */
-function filter_content_tags( string $content, string $context = null ) : string {
-	if ( null === $context ) {
-		$context = current_filter();
+function content_img_tag( string $filtered_image, string $context, int $attachment_id ) : string {
+	if ( ! defined( 'TACHYON_URL' ) || strpos( $filtered_image, TACHYON_URL ) === false ) {
+		return $filtered_image;
 	}
 
-	if ( false === strpos( $content, '<img' ) ) {
-		return $content;
+	if ( $attachment_id === 0 ) {
+		return $filtered_image;
 	}
 
-	$images = Tachyon::parse_images_from_html( $content );
-	if ( empty( $images ) ) {
-		// No images, leave early.
-		return $content;
+	$image_meta = wp_get_attachment_metadata( $attachment_id );
+
+	// Add 'width' and 'height' attributes if applicable.
+	if ( ! str_contains( $filtered_image, ' width=' ) && ! str_contains( $filtered_image, ' height=' ) ) {
+		$filtered_image = add_width_and_height_attr( $filtered_image, $image_meta );
 	}
 
-	// This bit is from Core.
-	$selected_images = [];
-	$attachment_ids = [];
-
-	foreach ( $images['img_url'] as $key => $img_url ) {
-		if ( strpos( $img_url, TACHYON_URL ) !== 0 ) {
-			// It's not a Tachyon URL.
-			continue;
-		}
-
-		$image_data = [
-			'full_tag' => $images[0][ $key ],
-			'link_url' => $images['link_url'][ $key ],
-			'img_tag' => $images['img_tag'][ $key ],
-			'img_url' => $images['img_url'][ $key ],
-		];
-
-		$image = $image_data['img_tag'];
-
-		if ( false === strpos( $image, ' srcset=' ) && preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) && absint( $class_id[1] ) ) {
-			$attachment_id = $class_id[1];
-			$image_data['id'] = $attachment_id;
-			/*
-			 * If exactly the same image tag is used more than once, overwrite it.
-			 * All identical tags will be replaced later with 'str_replace()'.
-			 */
-			$selected_images[ $image ] = $image_data;
-			// Overwrite the ID when the same image is included more than once.
-			$attachment_ids[ $attachment_id ] = true;
-		}
+	// Add 'srcset' and 'sizes' attributes if applicable.
+	if ( ! str_contains( $filtered_image, ' srcset=' ) ) {
+		$filtered_image = add_srcset_and_sizes_attr( $filtered_image, $image_meta, $attachment_id );
 	}
 
-	if ( empty( $attachment_ids ) ) {
-		// No WP attachments, nothing further to do.
-		return $content;
-	}
+	return $filtered_image;
+}
 
-	/*
-	 * Warm the object cache with post and meta information for all found
-	 * images to avoid making individual database calls.
-	 */
-	_prime_post_caches( array_keys( $attachment_ids ), false, true );
-
-	// Whether to add the lazy loading attribute.
-	$add_loading_attr = wp_lazy_loading_enabled( 'img', $context );
-
-	foreach ( $selected_images as $image => $image_data ) {
-		$attachment_id = $image_data['id'];
-
-		// The ID returned here may not always be an image, eg. if the attachment
-		// has been deleted but is still referenced in the content or if the content
-		// has been migrated and the attachment IDs no longer correlate to the right
-		// post table entries.
-		if ( ! wp_attachment_is_image( $attachment_id ) ) {
-			continue;
-		}
-
-		$image_meta = wp_get_attachment_metadata( $attachment_id );
-		if ( ! $image_meta || ! is_array( $image_meta ) ) {
-			trigger_error( sprintf( 'Could not retrieve image meta data for Attachment ID "%s"', (string) $attachment_id ), E_USER_WARNING );
-			continue;
-		}
-
-		/**
-		 * Filters whether to add the missing `width` and `height` HTML attributes to the img tag. Default `true`.
-		 *
-		 * Returning anything else than `true` will not add the attributes.
-		 *
-		 * @since 5.5.0
-		 *
-		 * @param bool   $value         The filtered value, defaults to `true`.
-		 * @param string $image         The HTML `img` tag where the attribute should be added.
-		 * @param string $context       Additional context about how the function was called or where the img tag is.
-		 * @param int    $attachment_id The image attachment ID.
-		 */
-		$add_hw = apply_filters( 'wp_img_tag_add_width_and_height_attr', true, $image, $context, $attachment_id );
-
-		/**
-		 * Filters whether to add the `srcset` and `sizes` HTML attributes to the img tag. Default `true`.
-		 *
-		 * Returning anything else than `true` will not add the attributes.
-		 *
-		 * @since 5.5.0
-		 *
-		 * @param bool   $value         The filtered value, defaults to `true`.
-		 * @param string $image         The HTML `img` tag where the attribute should be added.
-		 * @param string $context       Additional context about how the function was called or where the img tag is.
-		 * @param int    $attachment_id The image attachment ID.
-		 */
-		$add_srcset = apply_filters( 'wp_img_tag_add_srcset_and_sizes_attr', true, $image, $context, $attachment_id );
-
-		$filtered_image = $image;
-
-		// Add 'width' and 'height' attributes if applicable.
-		if ( $add_hw && $attachment_id > 0 && false === strpos( $filtered_image, ' width=' ) && false === strpos( $filtered_image, ' height=' ) ) {
-			$filtered_image = add_width_and_height_attr( $filtered_image, $image_meta, $attachment_id );
-		}
-
-		// Add 'srcset' and 'sizes' attributes if applicable.
-		if ( $add_srcset && $attachment_id > 0 && false === strpos( $filtered_image, ' srcset=' ) ) {
-			$filtered_image = add_srcset_and_sizes_attr( $filtered_image, $image_meta, $attachment_id );
-		}
-
-		// Add 'loading' attribute if applicable.
-		if ( $add_loading_attr && false === strpos( $filtered_image, ' loading=' ) ) {
-			$filtered_image = wp_img_tag_add_loading_attr( $filtered_image, $context );
-		}
-
-		// Update the content.
-		if ( $filtered_image !== $image ) {
-			$content = str_replace( $image, $filtered_image, $content );
-		}
-	}
-
-	return $content;
+/**
+ * Filters whether to add various attributes to the img tag markup.
+ *
+ * We override this to ensure compatibility with Tachyon & smart media.
+ *
+ * @param bool $value The filtered value, defaults to <code>true</code>.
+ * @param string $image The HTML <code>img</code> tag where the attribute should be added.
+ * @param string $context Additional context about how the function was called or where the img tag is.
+ * @param int $attachment_id The image attachment ID.
+ * @return bool The filtered value, defaults to <code>true</code>.
+ */
+function img_tag_add_attr( bool $value, string $image ) : bool {
+	return ! defined( 'TACHYON_URL' ) || strpos( $image, TACHYON_URL ) === false ? $value : false;
 }
 
 /**
@@ -1080,6 +1005,18 @@ function get_img_src_dimensions( string $image_src, array $image_meta ) {
 	}
 
 	return [ $width, $height ];
+}
+
+/**
+ * Filters the default method for getting image dimensions.
+ *
+ * @param array $dimensions List of width and height dimensions.
+ * @param string $image_src The current image src URL.
+ * @param array $image_meta Attachment metadata.
+ * @return void
+ */
+function src_get_dimensions( $dimensions, $image_src, $image_meta ) {
+	return get_img_src_dimensions( $image_src, $image_meta ) ?: $dimensions;
 }
 
 /**
@@ -1198,7 +1135,7 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	list( $width, $height ) = array_map( 'absint', $size_array );
 
 	// Ensure this is _not_ a tachyon image, not always the case when parsing from post content.
-	if ( strpos( $image_src, TACHYON_URL ) === false ) {
+	if ( ! defined( 'TACHYON_URL' ) || strpos( $image_src, TACHYON_URL ) === false ) {
 		// If the aspect ratio requested matches a custom crop size, pull that
 		// crop (in case there's a user custom crop). Otherwise just use the
 		// given dimensions.

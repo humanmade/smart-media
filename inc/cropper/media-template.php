@@ -205,19 +205,21 @@
 		<div class="imgedit-menu wp-clearfix">
 
 			<# if ( data.model.get('editor').can && data.model.get('editor').can.rotate ) { #>
-			<button type="button" class="imgedit-rleft button" onclick="imageEdit.rotate( 90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate counter-clockwise' ); ?></span></button>
-			<button type="button" class="imgedit-rright button" onclick="imageEdit.rotate( -90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><span class="screen-reader-text"><?php esc_html_e( 'Rotate clockwise' ); ?></span></button>
+			<button type="button" class="imgedit-rleft button" onkeyup="imageEdit.browsePopup(this)" onclick="imageEdit.rotate( 90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><?php esc_html_e( 'Rotate 90&deg; left' ); ?></button>
+			<button type="button" class="imgedit-rright button" onkeyup="imageEdit.browsePopup(this)" onclick="imageEdit.rotate( -90, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><?php esc_html_e( 'Rotate 90&deg; right' ); ?></button>
+			<button type="button" class="imgedit-rfull button" onkeyup="imageEdit.browsePopup(this)" onclick="imageEdit.rotate( 180, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )"><?php esc_html_e( 'Rotate 180&deg;' ); ?></button>
 			<# } else { #>
 			<button type="button" class="imgedit-rleft button disabled" disabled></button>
 			<button type="button" class="imgedit-rright button disabled" disabled></button>
 			<# } #>
 
-			<button type="button" onclick="imageEdit.flip( 1, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-flipv button"><span class="screen-reader-text"><?php esc_html_e( 'Flip vertically' ); ?></span></button>
-			<button type="button" onclick="imageEdit.flip( 2, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-fliph button"><span class="screen-reader-text"><?php esc_html_e( 'Flip horizontally' ); ?></span></button>
+			<button type="button" onkeyup="imageEdit.browsePopup(this)" onclick="imageEdit.flip( 1, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-flipv button"><?php esc_html_e( 'Flip vertically' ); ?></button>
+			<button type="button" onkeyup="imageEdit.browsePopup(this)" onclick="imageEdit.flip( 2, {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-fliph button"><?php esc_html_e( 'Flip horizontally' ); ?></button>
 
 			<button type="button" id="image-undo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.undo( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-undo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Undo' ); ?></span></button>
 			<button type="button" id="image-redo-{{ data.model.get( 'id' ) }}" onclick="imageEdit.redo( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}', this )" class="imgedit-redo button disabled" disabled><span class="screen-reader-text"><?php esc_html_e( 'Redo' ); ?></span></button>
 
+			<input type="hidden" id="imgedit-nonce-{{ data.model.get( 'id' ) }}" value="{{ data.model.get( 'editor' ).nonce }}" />
 			<input type="hidden" id="imgedit-sizer-{{ data.model.get( 'id' ) }}" value="{{ data.model.get( 'editor' ).sizer }}" />
 			<input type="hidden" id="imgedit-history-{{ data.model.get( 'id' ) }}" value="" />
 			<input type="hidden" id="imgedit-undone-{{ data.model.get( 'id' ) }}" value="0" />
@@ -260,7 +262,7 @@
 			<div class="hm-thumbnail-editor__focal-point focal-point" title="<?php esc_attr_e( 'Click to remove focal point', 'hm-smart-media' ); ?>"></div>
 		</div>
 	</div>
-	<div class="hm-thumbnail-editor__actions" id="imgedit-panel-{{ data.model.get( 'id' ) }}">
+	<div class="hm-thumbnail-editor__actions imgedit-submit imgedit-menu" id="imgedit-panel-{{ data.model.get( 'id' ) }}">
 		<# if ( data.model.get( 'size' ) === 'full' || data.model.get( 'size' ) === 'full-orig' ) { #>
 			<input type="button" onclick="imageEdit.save( {{ data.model.get( 'id' ) }}, '{{ data.model.get( 'editor' ).nonce }}' )" disabled="disabled" class="button button-primary imgedit-submit-btn" value="<?php esc_attr_e( 'Save' ); ?>" />
 			<# if ( data.model.get( 'editor' ).can && data.model.get( 'editor' ).can.restore ) { #>
