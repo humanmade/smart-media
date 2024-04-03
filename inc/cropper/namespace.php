@@ -960,7 +960,11 @@ function img_tag_add_attr( bool $value, string $image ) : bool {
  * @param array $image_meta The attachment meta data.
  * @return false|array Returns an array of [width, height] on success, false on failure.
  */
-function get_img_src_dimensions( string $image_src, array $image_meta ) {
+function get_img_src_dimensions( $image_src, $image_meta ) {
+	if ( empty( $image_meta ) ) {
+		return $image_src;
+	}
+
 	// Bail early if an image has been inserted and later edited.
 	list( $image_path ) = explode( '?', $image_src );
 	if ( preg_match( '/-e[0-9]{13}/', $image_meta['file'], $img_edit_hash ) &&
