@@ -962,7 +962,7 @@ function img_tag_add_attr( bool $value, string $image ) : bool {
  */
 function get_img_src_dimensions( $image_src, $image_meta ) {
 	if ( empty( $image_meta ) ) {
-		return $image_src;
+		return false;
 	}
 
 	// Bail early if an image has been inserted and later edited.
