@@ -1031,7 +1031,11 @@ function src_get_dimensions( $dimensions, $image_src, $image_meta ) {
  *
  * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
  */
-function add_width_and_height_attr( string $image, array $image_meta ) : string {
+function add_width_and_height_attr( $image, $image_meta ) : string {
+	if ( empty( $image_meta ) ) {
+		return $image;
+	}
+	
 	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
 
 	// Return early if we couldn't get the image source.
@@ -1061,7 +1065,15 @@ function add_width_and_height_attr( string $image, array $image_meta ) : string 
  *
  * @return string Converted 'img' element with 'srcset' and 'sizes' attributes added.
  */
-function add_srcset_and_sizes_attr( string $image, array $image_meta, int $attachment_id ) : string {
+function add_srcset_and_sizes_attr( $image, $image_meta, $attachment_id ) : string {
+	if ( empty( $image_meta ) ) {
+		$image_meta = wp_get_attachment_metadata( $attachment_id );
+	}
+
+	if ( empty( $image_meta ) ) {
+		return $image;
+	}
+	
 	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
 
 	// Return early if we couldn't get the image source.
