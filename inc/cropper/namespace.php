@@ -912,7 +912,7 @@ function is_tachyon_url( string $image ) : bool {
 		return false;
 	}
 
-	return strpos( $image, str_replace( [ 'http://', 'https://' ], '', TACHYON_URL ) ) !== false;
+	return strpos( $image, TACHYON_URL ) !== false;
 }
 
 /**
