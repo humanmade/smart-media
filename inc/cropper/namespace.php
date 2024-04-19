@@ -902,6 +902,20 @@ function massage_meta_data_for_orientation( array $meta_data ) {
 }
 
 /**
+ * Check if this image matches the tachyon host and path. Allows subdomains.
+ *
+ * @param string $image Image HTML or URL.
+ * @return boolean
+ */
+function is_tachyon_url( string $image ) : bool {
+	if ( ! defined( 'TACHYON_URL' ) ) {
+		return false;
+	}
+
+	return strpos( $image, str_replace( [ 'http://', 'https://' ], '', TACHYON_URL ) ) !== false;
+}
+
+/**
  * Add our special handlers for width & height attrs and srcset attributes.
  *
  * @param string $filtered_image Full img tag with attributes that will replace the source img tag.
@@ -910,7 +924,7 @@ function massage_meta_data_for_orientation( array $meta_data ) {
  * @return string Full img tag with attributes that will replace the source img tag.
  */
 function content_img_tag( string $filtered_image, string $context, int $attachment_id ) : string {
-	if ( ! defined( 'TACHYON_URL' ) || strpos( $filtered_image, TACHYON_URL ) === false ) {
+	if ( ! is_tachyon_url( $filtered_image ) ) {
 		return $filtered_image;
 	}
 
@@ -945,7 +959,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
  * @return bool The filtered value, defaults to <code>true</code>.
  */
 function img_tag_add_attr( bool $value, string $image ) : bool {
-	return ! defined( 'TACHYON_URL' ) || strpos( $image, TACHYON_URL ) === false ? $value : false;
+	return ! is_tachyon_url( $image ) ? $value : false;
 }
 
 /**
@@ -1151,7 +1165,7 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 	list( $width, $height ) = array_map( 'absint', $size_array );
 
 	// Ensure this is _not_ a tachyon image, not always the case when parsing from post content.
-	if ( ! defined( 'TACHYON_URL' ) || strpos( $image_src, TACHYON_URL ) === false ) {
+	if ( ! is_tachyon_url( $image_src ) ) {
 		// If the aspect ratio requested matches a custom crop size, pull that
 		// crop (in case there's a user custom crop). Otherwise just use the
 		// given dimensions.
