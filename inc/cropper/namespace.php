@@ -9,7 +9,6 @@ use Tachyon;
 use WP_Post;
 use WP_REST_Response;
 
-use function Altis\Cloud\get_main_site_url;
 use function HM\Media\get_asset_url;
 
 /**
