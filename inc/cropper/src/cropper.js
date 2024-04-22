@@ -33,7 +33,7 @@ addFilter(
 
 // Ensure Smart Media is supported by Asset Manager Framework.
 addAction( 'amf.extend_toolbar', 'smartmedia/cropper', extend_toolbar => {
-	Media.view.Toolbar = extend_toolbar( Media.view.Toolbar, 'apply' );
+  Media.view.Toolbar = extend_toolbar( Media.view.Toolbar, 'apply' );
 } );
 
 
@@ -158,9 +158,16 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
     libraryState.get( 'selection' ).on( 'selection:single', () => {
       const single = this.state( 'edit' ).get( 'selection' ).single();
 
+      if ( this._state === 'edit' ) {
+        return;
+      }
+
       // Check that the attachment is a complete object. Built in placeholders
       // exist for the cover block that can confuse things.
-      if ( ( ! isFeaturedImage && ! single.get( 'url' ) ) || ! single.get( 'id' ) ) {
+      if ( ! single.get( 'id' ) ) {
+        single.fetch().then( () => {
+          this.setState( 'edit' );
+        } );
         return;
       }
 
@@ -180,6 +187,9 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
           }
         }
 
+        // Set size back to full.
+        single.set( { size: 'full' } );
+
         wp.media.view.settings.post.featuredImageId = single.get( 'id' );
       }
 
@@ -190,6 +200,10 @@ Media.view.MediaFrame.Select = MediaFrameSelect.extend( {
       // default selection from.
       if ( isFeaturedImage ) {
         wp.media.view.settings.post.featuredImageId = -1;
+      }
+
+      if ( this._state !== 'edit' ) {
+        return;
       }
 
       this.setState( libraryState.id );
