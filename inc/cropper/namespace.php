@@ -39,11 +39,6 @@ function setup() {
 	// Preserve quality when editing original.
 	add_filter( 'jpeg_quality', __NAMESPACE__ . '\\jpeg_quality', 10, 2 );
 
-	// tmp fix for now
-	// add_filter( 'tachyon_url', function ( $url ) {
-	// 	return str_replace( get_main_site_url( '/' ), site_url( '/' ), $url );
-	// }, 40 );
-
 	/**
 	 * Tachyon settings.
 	 */
