@@ -9,6 +9,7 @@ use Tachyon;
 use WP_Post;
 use WP_REST_Response;
 
+use function Altis\Cloud\get_main_site_url;
 use function HM\Media\get_asset_url;
 
 /**
@@ -38,6 +39,11 @@ function setup() {
 
 	// Preserve quality when editing original.
 	add_filter( 'jpeg_quality', __NAMESPACE__ . '\\jpeg_quality', 10, 2 );
+
+	// tmp fix for now
+	// add_filter( 'tachyon_url', function ( $url ) {
+	// 	return str_replace( get_main_site_url( '/' ), site_url( '/' ), $url );
+	// }, 40 );
 
 	/**
 	 * Tachyon settings.
@@ -912,7 +918,12 @@ function is_tachyon_url( string $image ) : bool {
 		return false;
 	}
 
-	return strpos( $image, TACHYON_URL ) !== false;
+	// TACHYON_URL can be filtered on output so this is the only reliable method to
+	// check an image is handled by Tachyon.
+	$uploads_dir = wp_upload_dir();
+	$tachyon_base_url = dirname( tachyon_url( $uploads_dir['baseurl'] . '/image.jpg' ) );
+
+	return strpos( $image, $tachyon_base_url ) !== false;
 }
 
 /**
@@ -1049,7 +1060,7 @@ function add_width_and_height_attr( $image, $image_meta ) : string {
 	if ( empty( $image_meta ) ) {
 		return $image;
 	}
-	
+
 	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
 
 	// Return early if we couldn't get the image source.
@@ -1087,7 +1098,7 @@ function add_srcset_and_sizes_attr( $image, $image_meta, $attachment_id ) : stri
 	if ( empty( $image_meta ) ) {
 		return $image;
 	}
-	
+
 	$image_src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : '';
 
 	// Return early if we couldn't get the image source.
