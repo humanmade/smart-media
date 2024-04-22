@@ -91,8 +91,8 @@ const ImageEditor = Media.View.extend( {
 
 		// Reset to focal point or smart crop by default.
 		if ( ! crop.hasOwnProperty( 'x' ) ) {
+			const [ cropWidth, cropHeight ] = getMaxCrop( width, height, size.width, size.height );
 			if ( focalPoint.hasOwnProperty( 'x' ) ) {
-				const [ cropWidth, cropHeight ] = getMaxCrop( width, height, size.width, size.height );
 				this.setSelection( {
 					x: Math.min( width - cropWidth, Math.max( 0, focalPoint.x - ( cropWidth / 2 ) ) ),
 					y: Math.min( height - cropHeight, Math.max( 0, focalPoint.y - ( cropHeight / 2 ) ) ),
@@ -108,6 +108,16 @@ const ImageEditor = Media.View.extend( {
 					} )
 					.then( ( { topCrop } ) => {
 						this.setSelection( topCrop );
+					} )
+					.catch( error => {
+						console.error( error );
+						// Fallback to centered crop, can fail due to cross-origin canvas tainting.
+						this.setSelection( {
+							x: Math.max( 0 , ( width - cropWidth ) / 2 ),
+							y: Math.max( 0, ( height - cropHeight ) / 2 ),
+							width: cropWidth,
+							height: cropHeight,
+						} );
 					} );
 			}
 		} else {
