@@ -765,7 +765,7 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 		return $data;
 	}
 
-	if ( empty( $data['file'] ) {
+	if ( empty( $data['file'] ) ) {
 		return $data;
 	}
 
