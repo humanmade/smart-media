@@ -86,7 +86,7 @@ function setup() {
 	add_filter( 'wp_content_img_tag', __NAMESPACE__ . '\\content_img_tag', 10, 3 );
 
 	// Ensure loading and fetchpriority attributes are added to images.
-	add_filter( 'wp_get_loading_optimization_attributes', __NAMESPACE__ . '\\loading_optimization_attributes', 10, 4 );
+	add_filter( 'wp_get_loading_optimization_attributes', __NAMESPACE__ . '\\maybe_add_loading_optimization_attributes', 10, 4 );
 
 	// Ensure the get dimensions function understands Tachyon.
 	add_filter( 'wp_image_src_get_dimensions', __NAMESPACE__ . '\\src_get_dimensions', 10, 4 );
@@ -960,7 +960,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
 }
 
 /**
- * Add Loading optimization attributes to the img tag.
+ * Maybe add Loading optimization attributes to the img tag.
  *
  * @param array|false $loading_attrs False by default, or array of loading optimization attributes to short-circuit.
  * @param string $tag_name The tag name.
@@ -969,7 +969,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
  *
  * @return string
  */
-function loading_optimization_attributes( $loading_attrs, $tag_name, $attr, $context ) {
+function maybe_add_loading_optimization_attributes( $loading_attrs, $tag_name, $attr, $context ) {
 	$allowed_context = [ 'the_content', 'template' ];
 	if ( ! in_array( $context, $allowed_context , true ) ) ) {
 		return $loading_attrs;
