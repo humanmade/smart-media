@@ -971,7 +971,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
  */
 function maybe_add_loading_optimization_attributes( $loading_attrs, $tag_name, $attr, $context ) {
 	$allowed_context = [ 'the_content', 'template' ];
-	if ( ! in_array( $context, $allowed_context , true ) ) ) {
+	if ( ! in_array( $context, $allowed_context , true ) ) {
 		return $loading_attrs;
 	}
 
