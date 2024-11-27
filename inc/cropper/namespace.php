@@ -1004,7 +1004,7 @@ function maybe_add_loading_optimization_attributes( $loading_attrs, $tag_name, $
 	// Only apply fetchpriority to the first image.
 	if ( $count_images === 1 ) {
 		$loading_attrs['fetchpriority'] = 'high';
-	} elseif( $count_images >= $omit_threshold ) {
+	} elseif( $count_images > $omit_threshold ) {
 		$loading_attrs['loading'] = 'lazy';
 	}
 
