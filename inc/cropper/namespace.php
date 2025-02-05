@@ -85,9 +85,6 @@ function setup() {
 	 */
 	add_filter( 'wp_content_img_tag', __NAMESPACE__ . '\\content_img_tag', 10, 3 );
 
-	// Ensure loading and fetchpriority attributes are added to images.
-	add_filter( 'wp_get_loading_optimization_attributes', __NAMESPACE__ . '\\maybe_add_loading_optimization_attributes', 10, 4 );
-
 	// Ensure the get dimensions function understands Tachyon.
 	add_filter( 'wp_image_src_get_dimensions', __NAMESPACE__ . '\\src_get_dimensions', 10, 4 );
 
@@ -955,6 +952,12 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
 	if ( ! str_contains( $filtered_image, ' srcset=' ) ) {
 		$filtered_image = add_srcset_and_sizes_attr( $filtered_image, $image_meta, $attachment_id );
 	}
+
+	// Call core function to add loading optimization attributes again.
+	// These rely on width/heights being set correctly which is not set at the point core calls them.
+	// See wp_img_tag_add_auto_sizes
+	$filtered_image = wp_img_tag_add_loading_optimization_attrs( $filtered_image, $context );
+	$filtered_image = wp_img_tag_add_auto_sizes( $filtered_image );
 
 	return $filtered_image;
 }
