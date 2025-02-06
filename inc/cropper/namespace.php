@@ -963,61 +963,6 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
 }
 
 /**
- * Maybe add Loading optimization attributes to the img tag.
- *
- * @param array|false $loading_attrs False by default, or array of loading optimization attributes to short-circuit.
- * @param string $tag_name The tag name.
- * @param array $attr Array of the attributes for the tag.
- * @param string $context Context for the element for which the loading optimization attribute is requested.
- *
- * @return string
- */
-function maybe_add_loading_optimization_attributes( $loading_attrs, $tag_name, $attr, $context ) {
-	$allowed_context = [ 'the_content', 'template' ];
-	if ( ! in_array( $context, $allowed_context , true ) ) {
-		return $loading_attrs;
-	}
-
-	// Only apply to img tags.
-	if ( $tag_name !== 'img' ) {
-		return $loading_attrs;
-	}
-
-	// Check if lazy loading is enabled.
-	if ( ! wp_lazy_loading_enabled( $tag_name, $context ) ) {
-		return $loading_attrs;
-	}
-
-	// Count images to determine when we should fetchpriority and loading attribute.
-	static $count_images = 1;
-
-	/**
-	 * Filters the threshold for how many of the first content media elements to not lazy-load.
-	 *
-	 * For these first content media elements, the `loading` attribute will be omitted. By default, this is the case
-	 * for only the very first content media element.
-	 *
-	 * @since 5.9.0
-	 * @since 6.3.0 The default threshold was changed from 1 to 3.
-	 *
-	 * @param int $omit_threshold The number of media elements where the `loading` attribute will not be added. Default 3.
-	 */
-	$omit_threshold = apply_filters( 'wp_omit_loading_attr_threshold', 3 );
-
-	// Only apply fetchpriority to the first image.
-	if ( $count_images === 1 ) {
-		$loading_attrs['fetchpriority'] = 'high';
-	} elseif( $count_images > $omit_threshold ) {
-		$loading_attrs['loading'] = 'lazy';
-	}
-
-	// Increment image count.
-	$count_images++;
-
-	return $loading_attrs;
-}
-
-/**
  * Filters whether to add various attributes to the img tag markup.
  *
  * We override this to ensure compatibility with Tachyon & smart media.
