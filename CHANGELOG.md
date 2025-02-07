@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## v0.5.8
+
+- Bug: Fix adding image optimization attributes to images
+
+## v0.5.7
+
+- Bug: Add image optimization attributes to images
+
 ## v0.4.3
 
 - Bug: Check model has mime type before checking value
