@@ -957,7 +957,11 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
 	// These rely on width/heights being set correctly which is not set at the point core calls them.
 	// See wp_img_tag_add_auto_sizes
 	$filtered_image = wp_img_tag_add_loading_optimization_attrs( $filtered_image, $context );
-	$filtered_image = wp_img_tag_add_auto_sizes( $filtered_image );
+
+	// Availabile in WP 6.7 only.
+	if ( function_exists( 'wp_img_tag_add_auto_sizes' ) ) {
+		$filtered_image = wp_img_tag_add_auto_sizes( $filtered_image );
+	}
 
 	return $filtered_image;
 }
