@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.5.9
+
+- Bug: Fix wp_img_tag_add_auto_sizes not available before WP 6.7
+
 ## v0.5.8
 
 - Bug: Fix adding image optimization attributes to images
