@@ -994,7 +994,7 @@ function img_tag_add_attr( bool $value, string $image ) : bool {
  * @return false|array Returns an array of [width, height] on success, false on failure.
  */
 function get_img_src_dimensions( $image_src, $image_meta ) {
-	if ( empty( $image_meta ) ) {
+	if ( empty( $image_meta ) || empty( $image_meta['file'] ) ) {
 		return false;
 	}
 
