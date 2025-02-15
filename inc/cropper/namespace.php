@@ -559,10 +559,10 @@ function templates() {
  */
 function validate_parameters( $id_param = 'id' ) {
 	// phpcs:ignore
-	$attachment = get_post( intval( $_REQUEST[ $id_param ] ) );
+	$attachment = get_post( intval( $_REQUEST[ $id_param ] ?? 0 ) );
 
 	// phpcs:ignore
-	if ( empty( $_REQUEST[ $id_param ] ) || ! $attachment ) {
+	if ( ! $attachment ) {
 		// translators: %s is replaced by the text 'id' referring to the parameter name.
 		wp_die( sprintf( esc_html__( 'Invalid %s parameter.', 'hm-smart-media' ), '<code>id</code>' ) );
 	}
