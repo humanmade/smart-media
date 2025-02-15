@@ -653,7 +653,7 @@ function get_image_sizes() {
 /**
  * Deletes the coordinates for a custom crop for a given attachment ID and thumbnail size.
  *
- * @param int $attachment_id Attachment ID.
+ * @param int    $attachment_id Attachment ID.
  * @param string $size Thumbnail size name.
  * @return bool False on failure (probably no such custom crop), true on success.
  */
@@ -747,8 +747,8 @@ function prevent_thumbnail_generation( $sizes ) {
  *
  * @TODO Work out how to name files if crop on upload is reintroduced.
  *
- * @param $data          array The original attachment meta data.
- * @param $attachment_id int   The attachment ID.
+ * @param array $data The original attachment meta data.
+ * @param int   $attachment_id The attachment ID.
  *
  * @return array The modified attachment data including "new" image sizes.
  */
@@ -929,7 +929,7 @@ function is_tachyon_url( string $image ) : bool {
  *
  * @param string $filtered_image Full img tag with attributes that will replace the source img tag.
  * @param string $context Additional context, like the current filter name or the function name from where this was called.
- * @param int $attachment_id  The image attachment ID. May be 0 in case the image is not an attachment.
+ * @param int    $attachment_id  The image attachment ID. May be 0 in case the image is not an attachment.
  * @return string Full img tag with attributes that will replace the source img tag.
  */
 function content_img_tag( string $filtered_image, string $context, int $attachment_id ) : string {
@@ -971,10 +971,8 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
  *
  * We override this to ensure compatibility with Tachyon & smart media.
  *
- * @param bool $value The filtered value, defaults to <code>true</code>.
+ * @param bool   $value The filtered value, defaults to <code>true</code>.
  * @param string $image The HTML <code>img</code> tag where the attribute should be added.
- * @param string $context Additional context about how the function was called or where the img tag is.
- * @param int $attachment_id The image attachment ID.
  * @return bool The filtered value, defaults to <code>true</code>.
  */
 function img_tag_add_attr( bool $value, string $image ) : bool {
@@ -990,7 +988,7 @@ function img_tag_add_attr( bool $value, string $image ) : bool {
  *       wp/wp-includes/media.php:1380
  *
  * @param string $image_src The extracted image src.
- * @param array $image_meta The attachment meta data.
+ * @param array  $image_meta The attachment meta data.
  * @return false|array Returns an array of [width, height] on success, false on failure.
  */
 function get_img_src_dimensions( $image_src, $image_meta ) {
