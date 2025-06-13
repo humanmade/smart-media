@@ -22,7 +22,7 @@ If the change should be applied to previous versions, such as a bugfix, add labe
 1. Checkout the target release branch such as `v0-4-branch`
   - If the target release branch is the latest stable then use the `master` branch, and backport the changes
 2. Update the version number in `plugin.php` to reflect the nature of the changes, this plugin follows semver versioning.
-  - For small backwards comaptible changes like bug fixes update the patch version
+  - For small backwards compatible changes like bug fixes update the patch version
   - For changes that add functionality without changing existing functionality update the minor version
   - For breaking or highly significant changes update the major version
 3. Add a title heading for the version number above the latest updates in `CHANGELOG.md`
