@@ -958,7 +958,7 @@ function content_img_tag( string $filtered_image, string $context, int $attachme
 	// See wp_img_tag_add_auto_sizes
 	$filtered_image = wp_img_tag_add_loading_optimization_attrs( $filtered_image, $context );
 
-	// Availabile in WP 6.7 only.
+	// Available in WP 6.7 only.
 	if ( function_exists( 'wp_img_tag_add_auto_sizes' ) ) {
 		$filtered_image = wp_img_tag_add_auto_sizes( $filtered_image );
 	}
@@ -1083,7 +1083,7 @@ function add_width_and_height_attr( $image, $image_meta ) : string {
 	}
 
 	// Make absolutely sure that height and width attributes are accurate.
-	list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $size_array[0], $size_array[1] );
+	list( $width, $height ) = wp_constrain_dimensions( $size_array[0], $size_array[1], $image_meta['width'], $image_meta['height'] );
 
 	$hw = trim( image_hwstring( $width, $height ) );
 	return str_replace( '<img', "<img {$hw}", $image );
@@ -1244,7 +1244,7 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 /**
  * Returns the closest defined crop size to a given ratio.
  *
- * If there is a theme crop defined with proportians similar enough to the
+ * If there is a theme crop defined with proportions similar enough to the
  * source image,returns the name of that crop size. Otherwise, returns "full".
  *
  * @param float $ratio Width to height ratio of an image.
