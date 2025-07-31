@@ -1083,7 +1083,7 @@ function add_width_and_height_attr( $image, $image_meta ) : string {
 	}
 
 	// Make absolutely sure that height and width attributes are accurate.
-	list( $width, $height ) = wp_constrain_dimensions( $image_meta['width'], $image_meta['height'], $size_array[0], $size_array[1] );
+	list( $width, $height ) = wp_constrain_dimensions( $size_array[0], $size_array[1], $image_meta['width'], $image_meta['height'] );
 
 	$hw = trim( image_hwstring( $width, $height ) );
 	return str_replace( '<img', "<img {$hw}", $image );
