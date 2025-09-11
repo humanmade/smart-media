@@ -1114,6 +1114,9 @@ function add_srcset_and_sizes_attr( $image, $image_meta, $attachment_id ) : stri
 		return $image;
 	}
 
+	// Image src was retrieved from post content HTML which is htmlentityencoded.
+	$image_src = html_entity_decode( $image_src );
+
 	// Calculate width & height.
 	$size_array = get_img_src_dimensions( $image_src, $image_meta );
 	if ( ! $size_array ) {
