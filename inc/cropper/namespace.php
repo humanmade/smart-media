@@ -1198,6 +1198,9 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
 	}
 
+	// Ensure URL is decoded in case it was encoded with query params so that we can safely pass it to add_query_arg.
+	$image_src = html_entity_decode( $image_src );
+
 	// Multipliers for output srcset.
 	$modifiers = get_image_size_modifiers( $attachment_id );
 
