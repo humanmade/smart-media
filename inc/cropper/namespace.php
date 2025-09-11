@@ -1114,6 +1114,9 @@ function add_srcset_and_sizes_attr( $image, $image_meta, $attachment_id ) : stri
 		return $image;
 	}
 
+	// Image src was retrieved from post content HTML which is htmlentityencoded.
+	$image_src = html_entity_decode( $image_src );
+
 	// Calculate width & height.
 	$size_array = get_img_src_dimensions( $image_src, $image_meta );
 	if ( ! $size_array ) {
@@ -1197,9 +1200,6 @@ function image_srcset( array $sources, array $size_array, string $image_src, arr
 		// Get the tachyon URL for this image size.
 		$image_src = wp_get_attachment_image_url( $attachment_id, $size );
 	}
-
-	// Ensure URL is decoded in case it was encoded with query params so that we can safely pass it to add_query_arg.
-	$image_src = html_entity_decode( $image_src );
 
 	// Multipliers for output srcset.
 	$modifiers = get_image_size_modifiers( $attachment_id );
