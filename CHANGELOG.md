@@ -1,6 +1,8 @@
 Changelog
 =========
 
+- Bug: Return Tachyon URLs for virtual intermediate image sizes, including those selected for Yoast social images ([agency-marketing-site#1113](https://github.com/humanmade/agency-marketing-site/issues/1113)).
+
 ## v0.5.9
 
 - Bug: Fix wp_img_tag_add_auto_sizes not available before WP 6.7
