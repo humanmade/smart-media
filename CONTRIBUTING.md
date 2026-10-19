@@ -10,6 +10,10 @@ To get started follow these steps:
 
 You should then start working on your fork or branch.
 
+## Running the PHP tests
+
+The PHP integration tests are run manually and are not part of CI. See [tests/README.md](./tests/README.md) for how to set them up and run them.
+
 ## Making a pull request
 
 When you make a pull request it will be reviewed. You should also update the `CHANGELOG.md` - add lines after the title such as `- Bug: Fixed a typo #33` to describe each change and link to the issues if applicable.

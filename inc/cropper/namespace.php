@@ -850,7 +850,14 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
  * Core builds an uploads URL from the synthetic filename, but that file does
  * not exist. Consumers such as Yoast can use this URL without image_downsize.
  *
- * @param array        $data          The selected intermediate image data.
+ * Only `url` is replaced. `path` is left unchanged and still refers to the
+ * non-existent uploads file.
+ *
+ * The recursion guard is shared by all attachments: while the image URL is
+ * being resolved, every nested image_get_intermediate_size() call is skipped,
+ * not only Tachyon's own lookup.
+ *
+ * @param array       $data          The selected intermediate image data.
  * @param int          $attachment_id The attachment ID.
  * @param string|int[] $size          The requested size name or dimensions.
  * @return array
@@ -868,12 +875,13 @@ function filter_intermediate_image_size( array $data, int $attachment_id, $size 
 		$metadata = wp_get_attachment_metadata( $attachment_id );
 		$size = null;
 		foreach ( $metadata['sizes'] ?? [] as $name => $candidate ) {
-			if ( $candidate['file'] === $data['file'] ) {
+			if ( ( $candidate['file'] ?? null ) === $data['file'] ) {
 				$size = $name;
 				break;
 			}
 		}
 
+		// No matching size: keep core's data, including its non-existent URL.
 		if ( null === $size ) {
 			return $data;
 		}

@@ -1,7 +1,22 @@
 Changelog
 =========
 
-- Bug: Return Tachyon URLs for virtual intermediate image sizes, including those selected for Yoast social images ([agency-marketing-site#1113](https://github.com/humanmade/agency-marketing-site/issues/1113)).
+## v0.5.13
+
+- Bug: Return Tachyon URLs for virtual intermediate image sizes. 
+- Important: Rebuild Yoast indexables after deploying this update with `wp yoast index --reindex`.
+
+## v0.5.12
+
+- Bug: Decode URLs parsed from post content and in filtered srcsets
+
+## v0.5.11
+
+- Bug: Fix image tag width and height calculation to keep the aspect ratio
+
+## v0.5.10
+
+- Bug: Fix PHP warnings in attachment meta data filter when `file` is missing
 
 ## v0.5.9
 
