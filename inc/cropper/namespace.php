@@ -59,6 +59,7 @@ function setup() {
 
 	// Fake the image meta data.
 	add_filter( 'wp_get_attachment_metadata', __NAMESPACE__ . '\\filter_attachment_meta_data', 20, 2 );
+	add_filter( 'image_get_intermediate_size', __NAMESPACE__ . '\\filter_intermediate_image_size', 10, 3 );
 
 	// Prevent fake image meta sizes being saved to the database.
 	add_filter( 'wp_update_attachment_metadata', __NAMESPACE__ . '\\filter_update_attachment_meta_data' );
@@ -840,6 +841,65 @@ function filter_attachment_meta_data( $data, $attachment_id ) {
 	}
 
 	$cache[ $attachment_id ] = $data;
+	return $data;
+}
+
+/**
+ * Give virtual intermediate sizes the same URL as the image rendering API.
+ *
+ * Core builds an uploads URL from the synthetic filename, but that file does
+ * not exist. Consumers such as Yoast can use this URL without image_downsize.
+ *
+ * Only `url` is replaced. `path` is left unchanged and still refers to the
+ * non-existent uploads file.
+ *
+ * The recursion guard is shared by all attachments: while the image URL is
+ * being resolved, every nested image_get_intermediate_size() call is skipped,
+ * not only Tachyon's own lookup.
+ *
+ * @param array       $data          The selected intermediate image data.
+ * @param int          $attachment_id The attachment ID.
+ * @param string|int[] $size          The requested size name or dimensions.
+ * @return array
+ */
+function filter_intermediate_image_size( array $data, int $attachment_id, $size ) : array {
+	static $resolving = false;
+
+	if ( $resolving || empty( $data['_tachyon_dynamic'] ) || ! function_exists( 'tachyon_url' ) ) {
+		return $data;
+	}
+
+	if ( is_array( $size ) ) {
+		// Core may select a cropped size for a dimensions request. Resolve that
+		// size's name so Tachyon keeps its crop instead of fitting the original.
+		$metadata = wp_get_attachment_metadata( $attachment_id );
+		$size = null;
+		foreach ( $metadata['sizes'] ?? [] as $name => $candidate ) {
+			if ( ( $candidate['file'] ?? null ) === $data['file'] ) {
+				$size = $name;
+				break;
+			}
+		}
+
+		// No matching size: keep core's data, including its non-existent URL.
+		if ( null === $size ) {
+			return $data;
+		}
+	}
+
+	// Tachyon itself calls image_get_intermediate_size(). Keep that nested
+	// lookup unchanged, and always release the guard if another filter throws.
+	$resolving = true;
+	try {
+		$url = wp_get_attachment_image_url( $attachment_id, $size );
+	} finally {
+		$resolving = false;
+	}
+
+	if ( $url ) {
+		$data['url'] = $url;
+	}
+
 	return $data;
 }
 
