@@ -22,16 +22,18 @@ If the change should be applied to previous versions, such as a bugfix, add labe
 
 ## Making a new release
 
+Releases are built and tagged by a GitHub Actions workflow. Tags are immutable, so a tag can't be re-created once it exists.
 
 1. Checkout the target release branch such as `v0-4-branch`
   - If the target release branch is the latest stable then use the `master` branch, and backport the changes
-2. Update the version number in `plugin.php` to reflect the nature of the changes, this plugin follows semver versioning.
+2. Add a title heading for the new version, such as `## v0.5.14`, above the latest updates in `CHANGELOG.md`. This plugin follows semver versioning.
   - For small backwards compatible changes like bug fixes update the patch version
   - For changes that add functionality without changing existing functionality update the minor version
   - For breaking or highly significant changes update the major version
-3. Add a title heading for the version number above the latest updates in `CHANGELOG.md`
-4. Commit and push the changes
+3. Commit and push the changes
   - If making the changes against `master` create a pull request instead and backport it to the latest stable branch
-5. Go to the releases tab and create a new release from the target release branch, set the new tag name to match the updated version number
+4. Go to the Actions tab, select the "Release" workflow and choose "Run workflow". Select the target release branch, and enter the version without a leading `v` (for example `0.5.14`).
+
+The workflow builds the assets, replaces the `__VERSION__` placeholder in `plugin.php` with the version, then creates the tag and GitHub release. Don't put a version number in `plugin.php` by hand.
 
 You may need to repeat this process when backporting fixes to multiple release branches.

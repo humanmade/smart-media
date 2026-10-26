@@ -1,0 +1,10 @@
+# Files left out of the release ZIP (git archive) and Composer dist downloads.
+/.config export-ignore
+/.github export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.idea export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/phpunit.xml.dist export-ignore
+/tests export-ignore
