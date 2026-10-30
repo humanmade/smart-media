@@ -34,7 +34,7 @@ Releases are built and tagged by a GitHub Actions workflow. Tags are immutable, 
   - If making the changes against `master` create a pull request instead and backport it to the latest stable branch
 4. Go to the Actions tab, select the "Release" workflow and choose "Run workflow". Select the target release branch, and enter the version without a leading `v` (for example `0.5.14`).
 
-The workflow builds the assets, replaces the `__VERSION__` placeholder in `plugin.php` with the version, then creates the tag and GitHub release. Don't put a version number in `plugin.php` by hand.
+The workflow builds the assets, replaces the `__VERSION__` placeholder in `plugin.php` with the version, then creates the tag and GitHub release. Don't put a version number in `plugin.php` by hand. If the workflow fails after the tag is created, run it again with the same version and it will pick up the existing tag.
 
 You may need to repeat this process when backporting fixes to multiple release branches.
 
