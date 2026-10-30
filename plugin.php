@@ -4,7 +4,7 @@
  * Description: Advanced media tools that take advantage of Rekognition and Tachyon.
  * Author: Human Made Limited
  * License: GPL-3.0
- * Version: __VERSION__
+ * Version: 0.5.14
  */
 
 namespace HM\Media;
