@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v0.5.14
+
+- Change: Updated the release workflow now Packagist no longer allows re-created tags.
+
 ## v0.5.13
 
 - Bug: Return Tachyon URLs for virtual intermediate image sizes. 
