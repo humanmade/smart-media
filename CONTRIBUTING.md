@@ -37,3 +37,5 @@ Releases are built and tagged by a GitHub Actions workflow. Tags are immutable, 
 The workflow builds the assets, replaces the `__VERSION__` placeholder in `plugin.php` with the version, then creates the tag and GitHub release. Don't put a version number in `plugin.php` by hand.
 
 You may need to repeat this process when backporting fixes to multiple release branches.
+
+> **Warning:** Only `master` and branches that have the new "Release" workflow can be released this way. Older release branches such as `v0-4-branch` still have the previous workflow, which runs when a tag is pushed. Do not create or push a tag on those branches by hand. Packagist treats tags as immutable and may lock the unbuilt commit before the workflow moves the tag. If one of those branches needs a release, first apply the `__VERSION__` placeholder and release workflow changes to it.
