@@ -6,6 +6,10 @@ name: Release
 # The tag is created once and never moved or force-pushed, which is what
 # Packagist requires. Run this manually from the Actions tab, choosing the
 # branch to release from (master or a release branch) and the version to cut.
+#
+# If a run fails after the tag was pushed, run it again with the same version.
+# A re-run reuses the existing tag (after checking this workflow made it) and
+# only builds the ZIP and publishes the GitHub release.
 
 on:
   workflow_dispatch:
@@ -41,14 +45,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure the tag does not already exist
+      - name: Check for an existing tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git ls-remote --tags origin | grep -q "refs/tags/${VERSION}$"; then
-            echo "::error::Tag ${VERSION} already exists. Tags are immutable, so bump the version and try again."
+          if ! git rev-parse -q --verify "refs/tags/${VERSION}" > /dev/null; then
+            echo "TAG_EXISTS=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          # The tag exists. Only reuse it if this workflow made it, so a tag
+          # pushed by hand is never released.
+          if [ "$(git cat-file -t "refs/tags/${VERSION}")" != "tag" ]; then
+            echo "::error::Tag ${VERSION} exists but is not an annotated tag, so this workflow did not create it."
             exit 1
           fi
 
+          if [ "$(git log -1 --format=%s "refs/tags/${VERSION}^{commit}")" != "Release ${VERSION}" ]; then
+            echo "::error::Tag ${VERSION} exists but its commit is not 'Release ${VERSION}', so this workflow did not create it."
+            exit 1
+          fi
+
+          TAGGED_PLUGIN="$(git show "${VERSION}:plugin.php")"
+          if printf '%s\n' "$TAGGED_PLUGIN" | grep -q '__VERSION__'; then
+            echo "::error::Tag ${VERSION} exists but plugin.php still has the __VERSION__ placeholder."
+            exit 1
+          fi
+          if ! printf '%s\n' "$TAGGED_PLUGIN" | grep -Fxq " * Version: ${VERSION}"; then
+            echo "::error::Tag ${VERSION} exists but plugin.php has no ' * Version: ${VERSION}' line."
+            exit 1
+          fi
+
+          # A finished release must not be overwritten.
+          if gh release view "${VERSION}" > /dev/null 2>&1; then
+            echo "::error::A GitHub release for ${VERSION} already exists. Tags are immutable, so bump the version and try again."
+            exit 1
+          fi
+
+          echo "TAG_EXISTS=true" >> "$GITHUB_ENV"
+          echo "::notice::Tag ${VERSION} already exists and was made by this workflow. It will be reused."
+
       - name: Ensure the changelog has an entry for this version
+        if: env.TAG_EXISTS != 'true'
         run: |
           if ! grep -Eq "^## v${VERSION//./\\.}\$" CHANGELOG.md; then
             echo "::error::CHANGELOG.md has no '## v${VERSION}' heading. Add it on this branch and try again."
@@ -56,6 +94,7 @@ jobs:
           fi
 
       - name: Set up Node
+        if: env.TAG_EXISTS != 'true'
         uses: actions/setup-node@v4
         with:
           # node-sass 4 does not build on newer Node versions.
@@ -63,11 +102,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies and build
+        if: env.TAG_EXISTS != 'true'
         run: |
           npm ci
           npm run build
 
       - name: Stamp version into the plugin
+        if: env.TAG_EXISTS != 'true'
         run: |
           if ! grep -q '__VERSION__' plugin.php; then
             echo "::error::plugin.php has no __VERSION__ placeholder to replace."
@@ -77,6 +118,7 @@ jobs:
           grep -n "Version:" plugin.php
 
       - name: Create the immutable release commit and tag
+        if: env.TAG_EXISTS != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -102,12 +144,34 @@ jobs:
             -o "dist/smart-media-${VERSION}.zip" \
             "${VERSION}"
 
+      - name: Write release notes from the changelog
+        run: |
+          mkdir -p dist
+          # Read the changelog from the tag so a re-run does not depend on the
+          # branch it was started from.
+          ESCAPED_VERSION="${VERSION//./\\.}"
+          git show "${VERSION}:CHANGELOG.md" \
+            | ESCAPED_VERSION="$ESCAPED_VERSION" awk '
+                $0 ~ "^## v" ENVIRON["ESCAPED_VERSION"] "$" { found = 1; next }
+                found && /^## / { exit }
+                found { print }
+              ' \
+            | awk '
+                /[^[:space:]]/ { for (; blanks > 0; blanks--) print ""; print; started = 1; next }
+                started { blanks++ }
+              ' > dist/release-notes.md
+
+          if [ ! -s dist/release-notes.md ]; then
+            echo "::error::CHANGELOG.md in tag ${VERSION} has no notes under '## v${VERSION}'."
+            exit 1
+          fi
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
           name: ${{ env.VERSION }}
-          generate_release_notes: true
+          body_path: dist/release-notes.md
           files: dist/smart-media-${{ env.VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
